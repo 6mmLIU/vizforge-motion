@@ -93,7 +93,7 @@ function fallbackVisual(spec: VisualSpec) {
         y: height - 132,
         fill: theme.text,
         "font-size": 24,
-        "font-family": "Inter, Arial, sans-serif",
+        "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
         "font-weight": 760
       }) +
       textNode("Static-safe placeholder. Animated renderer can be extended without changing the API contract.", {
@@ -101,7 +101,7 @@ function fallbackVisual(spec: VisualSpec) {
         y: height - 102,
         fill: theme.muted,
         "font-size": 14,
-        "font-family": "Inter, Arial, sans-serif"
+        "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif"
       })
   );
 }

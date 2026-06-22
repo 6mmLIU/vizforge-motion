@@ -23,7 +23,7 @@ describe("renderAnimatedSvg", () => {
     expect(result.svg).toContain('width="1080"');
     expect(result.svg).toContain('height="1440"');
     expect(result.svg).toContain('viewBox="0 0 720 960"');
-    expect(result.svg).toContain('font-size="32"');
+    expect(result.svg).toContain('font-size="34"');
     expect(result.compatibility.safe).toBe(true);
   });
 
@@ -289,8 +289,8 @@ describe("renderAnimatedSvg", () => {
     expect(result.svg).toContain("自然流量");
     expect(result.svg).toContain("付费广告");
     expect(result.palette).toHaveLength(2);
-    expect(result.svg).toContain('stroke="#2563eb"');
-    expect(result.svg).toContain('stroke="#14b8a6"');
+    expect(result.svg).toContain('stroke="#2f63d8"');
+    expect(result.svg).toContain('stroke="#16a394"');
     expect(result.compatibility.safe).toBe(true);
   });
 

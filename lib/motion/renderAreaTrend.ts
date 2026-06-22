@@ -4,7 +4,7 @@ import { gridLines, maxAbs, resolveFields, type Point } from "@/lib/motion/rende
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const DASHBOARD_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 type AreaSeries = {
   name: string;
@@ -236,7 +236,7 @@ function renderLegend(series: AreaSeries[], width: number, y: number): string {
         textNode(item.name.slice(0, 10), {
           x: x + 14,
           y,
-          fill: "#52525b",
+          fill: "#697386",
           "font-size": 13,
           "font-family": DASHBOARD_FONT
         })
@@ -249,11 +249,11 @@ function renderPeriodPill(width: number, label: string): string {
   const pillWidth = Math.min(216, Math.max(112, label.length * 12 + 54));
   const x = width - pillWidth - 40;
   return (
-    rect({ x, y: 40, width: pillWidth, height: 48, rx: 20, fill: "#f0f1f3" }) +
+    rect({ x, y: 40, width: pillWidth, height: 48, rx: 20, fill: "#eef2f7" }) +
     textNode(label, {
       x: x + pillWidth / 2,
       y: 71,
-      fill: "#050505",
+      fill: "#182033",
       "font-size": 18,
       "font-family": DASHBOARD_FONT,
       "font-weight": 650,

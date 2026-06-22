@@ -4,7 +4,7 @@ import { stagger } from "@/lib/motion/timeline";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 type CalendarCell = {
@@ -36,7 +36,9 @@ export function renderHeatmap(spec: VisualSpec, theme: VisualTheme): string {
   const gridWidth = weeks * cellSize + Math.max(0, weeks - 1) * gap;
   const gridHeight = 7 * cellSize + 6 * gap;
   const startX = plot.x + Math.max(0, (plot.width - gridWidth) / 2);
-  const startY = plot.y + Math.max(0, tall ? (plot.height - gridHeight - 34) / 2 : Math.min(28, (plot.height - gridHeight - 34) / 2));
+  const startY = tall
+    ? plot.y + Math.max(88, Math.min(124, (plot.height - gridHeight) * 0.26))
+    : plot.y + Math.max(0, Math.min(28, (plot.height - gridHeight - 34) / 2));
 
   const calendar = cells
     .map((cell) => {

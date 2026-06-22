@@ -36,7 +36,7 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
         return (
           rect({ x: plot.x - 8, y: Number((y - nodeHeight / 2).toFixed(2)), width: 16, height: Number(nodeHeight.toFixed(2)), rx: Math.min(7, nodeHeight / 2), fill: theme.palette[index % theme.palette.length], opacity: 0.82 }) +
           (index % sourceLabelEvery === 0
-            ? textNode(name.slice(0, 14), { x: plot.x - 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": sources.length > 24 ? 9 : 12, "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif", "text-anchor": "end" })
+            ? textNode(name.slice(0, 14), { x: plot.x - 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": sources.length > 24 ? 9 : 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" })
             : "")
         );
       })
@@ -47,7 +47,7 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
         return (
           rect({ x: plot.x + plot.width - 8, y: Number((y - nodeHeight / 2).toFixed(2)), width: 16, height: Number(nodeHeight.toFixed(2)), rx: Math.min(7, nodeHeight / 2), fill: theme.palette[(index + sources.length) % theme.palette.length], opacity: 0.82 }) +
           (index % targetLabelEvery === 0
-            ? textNode(name.slice(0, 14), { x: plot.x + plot.width + 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": targets.length > 24 ? 9 : 12, "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif" })
+            ? textNode(name.slice(0, 14), { x: plot.x + plot.width + 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": targets.length > 24 ? 9 : 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif" })
             : "")
         );
       })

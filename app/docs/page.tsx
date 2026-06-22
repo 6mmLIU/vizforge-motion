@@ -77,12 +77,12 @@ const payload = `{
       { "label": "总销量", "value": 278, "delta": "3.3%", "trend": "up" }
     ]
   },
-  "palette": ["#2563eb", "#14b8a6", "#f97316", "#8b5cf6"],
+  "palette": ["#2f63d8", "#16a394", "#f06a3f", "#7b61ff"],
   "export": { "format": "json", "target": "xiaohongshu" }
 }`;
 
 const responseMeta = `{
-  "palette": ["#2563eb", "#14b8a6", "..."],
+  "palette": ["#2f63d8", "#16a394", "..."],
   "meta": {
     "visual": { "type": "bar", "story": "magnitude" },
     "mappings": { "category": "month", "value": "value", "x": "month", "y": "value" },

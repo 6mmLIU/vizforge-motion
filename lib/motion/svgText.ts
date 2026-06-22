@@ -1,15 +1,24 @@
 import { rect, textNode } from "@/lib/motion/svgPrimitives";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const SVG_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const SVG_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 export function cardTitle(title: string, subtitle: string | undefined, theme: VisualTheme, width = 720, height = 500): string {
   if (theme.id === "editorial-light") {
     const tall = height / width > 1.15;
-    const x = tall ? 52 : 40;
-    const y = tall ? 76 : 64;
-    const titleSize = tall ? 32 : theme.typography.title;
-    const titleLines = wrapText(title, width - x * 2 - (tall ? 0 : 180), titleSize, tall ? 2 : 1);
+    const x = tall ? 56 : 40;
+    const y = tall ? 88 : 62;
+    const titleSize = tall ? 34 : theme.typography.title;
+    const titleLines = wrapText(title, width - x * 2 - (tall ? 120 : 180), titleSize, tall ? 2 : 1);
+    const eyebrow = textNode("数据快照", {
+      x,
+      y: tall ? 54 : 34,
+      fill: theme.accent,
+      opacity: 0.82,
+      "font-size": tall ? 10 : 9,
+      "font-family": SVG_FONT,
+      "font-weight": 640
+    });
     const titleNode = titleLines
       .map((line, index) =>
         textNode(line, {
@@ -18,30 +27,31 @@ export function cardTitle(title: string, subtitle: string | undefined, theme: Vi
           fill: theme.text,
           "font-size": titleSize,
           "font-family": SVG_FONT,
-          "font-weight": 760
+          "font-weight": 620
         })
       )
       .join("");
-    const subtitleY = y + Math.max(1, titleLines.length) * titleSize * 1.16 + (tall ? 18 : 8);
+    const subtitleY = y + Math.max(1, titleLines.length) * titleSize * 1.12 + (tall ? 16 : 8);
     const subtitleNode = subtitle
       ? textNode(subtitle, {
           x,
           y: Number(subtitleY.toFixed(2)),
-          fill: theme.muted,
-          "font-size": tall ? 16 : theme.typography.subtitle,
-          "font-family": SVG_FONT
+          fill: "#7b8496",
+          "font-size": tall ? 14 : theme.typography.subtitle,
+          "font-family": SVG_FONT,
+          "font-weight": 420
         })
       : "";
     const accentRule = rect({
       x,
-      y: tall ? 44 : 36,
-      width: tall ? 48 : 38,
-      height: tall ? 5 : 4,
-      rx: 3,
+      y: tall ? 64 : 44,
+      width: tall ? 42 : 34,
+      height: tall ? 3 : 3,
+      rx: 2,
       fill: theme.accent
     });
 
-    return accentRule + titleNode + subtitleNode;
+    return eyebrow + accentRule + titleNode + subtitleNode;
   }
 
   const titleNode = textNode(title, {
@@ -72,15 +82,15 @@ export function footerText(caption: string | undefined, source: string | undefin
 
   if (theme.id === "editorial-light") {
     const tall = height / width > 1.15;
-    const x = tall ? 52 : 40;
-    const y = height - (tall ? 48 : 34);
+    const x = tall ? 56 : 40;
+    const y = height - (tall ? 50 : 34);
     const captionNode = caption
       ? textNode(fitText(caption, width - x * 2 - (source ? 150 : 0), tall ? 13 : 12), {
           x,
           y,
-          fill: theme.muted,
-          opacity: 0.92,
-          "font-size": tall ? 13 : 12,
+          fill: "#7b8496",
+          opacity: 0.9,
+          "font-size": tall ? 12 : 12,
           "font-family": SVG_FONT
         })
       : "";

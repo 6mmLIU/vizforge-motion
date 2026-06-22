@@ -11,8 +11,10 @@ export type Point = {
 
 export function chartFrame(width: number, height: number, theme: VisualTheme): string {
   if (theme.id === "editorial-light") {
-    const inset = height / width > 1.15 ? 24 : 16;
-    const radius = height / width > 1.15 ? 28 : 24;
+    const tall = height / width > 1.15;
+    const inset = tall ? 22 : 16;
+    const radius = tall ? 34 : 24;
+    const headerHeight = tall ? 148 : Math.min(112, height * 0.16);
     return rect({
       x: inset,
       y: inset,
@@ -21,16 +23,25 @@ export function chartFrame(width: number, height: number, theme: VisualTheme): s
       rx: radius,
       fill: theme.surface,
       stroke: theme.border,
-      "stroke-width": 1.2
+      "stroke-width": 0.8
     }) +
       rect({
         x: inset + 1,
         y: inset + 1,
         width: width - inset * 2 - 2,
-        height: Math.min(120, height * 0.16),
+        height: headerHeight,
         rx: radius - 1,
-        fill: "#fbfcff",
-        opacity: 0.92
+        fill: "#f8fafc",
+        opacity: 0.82
+      }) +
+      rect({
+        x: inset + 28,
+        y: inset + headerHeight + 1,
+        width: width - inset * 2 - 56,
+        height: 1,
+        rx: 1,
+        fill: "#edf2f7",
+        opacity: tall ? 0.8 : 0.5
       });
   }
 
@@ -71,7 +82,7 @@ export function gridLines(plot: { x: number; y: number; width: number; height: n
         x2: plot.x + plot.width,
         y1: Number(y.toFixed(2)),
         y2: Number(y.toFixed(2)),
-        stroke: dashboard ? "#e5e7eb" : theme.text,
+        stroke: dashboard ? "#edf1f6" : theme.text,
         "stroke-width": dashboard ? 0.9 : 1,
         opacity: dashboard ? 1 : theme.gridOpacity
       })

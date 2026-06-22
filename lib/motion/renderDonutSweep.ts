@@ -4,7 +4,7 @@ import { describeArc, extractAggregatedPoints, maxAbs, totalPositive } from "@/l
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const DASHBOARD_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 function formatNumber(value: number): string {
   return value.toLocaleString("zh-CN", { maximumFractionDigits: value >= 10 ? 0 : 1 });
@@ -14,14 +14,15 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractAggregatedPoints(spec, 200);
   const total = totalPositive(points);
   const dashboard = theme.id === "editorial-light";
+  const tall = dashboard && spec.export.height / spec.export.width > 1.15;
   if (dashboard && spec.type === "pie") return renderPieChart(spec, theme, points, total);
   if (dashboard && spec.type === "arc") return renderArcBands(spec, theme, points);
   if (dashboard && spec.type === "gauge") return renderGauge(spec, theme, total);
 
-  const cx = dashboard ? spec.export.width * 0.38 : spec.export.width / 2;
-  const cy = dashboard ? spec.export.height * 0.57 : spec.export.height / 2 + 22;
-  const radius = Math.min(spec.export.width, spec.export.height) * (dashboard ? 0.2 : 0.25);
-  const strokeWidth = Math.max(dashboard ? 18 : 22, radius * 0.22);
+  const cx = dashboard ? (tall ? spec.export.width / 2 : spec.export.width * 0.38) : spec.export.width / 2;
+  const cy = dashboard ? (tall ? spec.export.height * 0.48 : spec.export.height * 0.57) : spec.export.height / 2 + 22;
+  const radius = Math.min(spec.export.width, spec.export.height) * (dashboard ? (tall ? 0.24 : 0.2) : 0.25);
+  const strokeWidth = Math.max(dashboard ? 20 : 22, radius * (tall ? 0.19 : 0.22));
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
 
@@ -30,7 +31,7 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
     cy,
     r: Number(radius.toFixed(2)),
     fill: "none",
-    stroke: dashboard ? "#edf0f3" : theme.border,
+    stroke: dashboard ? "#edf2f7" : theme.border,
     "stroke-width": Number(strokeWidth.toFixed(2)),
     opacity: dashboard ? 1 : 0.62
   });
@@ -69,7 +70,9 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   const legend = dashboard
-    ? renderDashboardVerticalLegend(spec, theme, points, total, 176)
+    ? tall
+      ? renderDashboardLegendGrid(spec, theme, points, total, spec.export.height * 0.7)
+      : renderDashboardVerticalLegend(spec, theme, points, total, 176)
     : renderHorizontalWrapLegend(spec, theme, points);
 
   return group(
@@ -79,16 +82,16 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
         x: cx,
         y: cy + 5,
         fill: theme.text,
-        "font-size": dashboard ? 26 : theme.typography.value,
+        "font-size": dashboard ? (tall ? 30 : 26) : theme.typography.value,
         "font-family": DASHBOARD_FONT,
-        "font-weight": 780,
+        "font-weight": 620,
         "text-anchor": "middle"
       }) +
       textNode("合计", {
         x: cx,
-        y: cy + 32,
-        fill: theme.muted,
-        "font-size": dashboard ? 13 : theme.typography.label,
+        y: cy + (tall ? 34 : 32),
+        fill: "#7b8496",
+        "font-size": dashboard ? 12 : theme.typography.label,
         "font-family": DASHBOARD_FONT,
         "text-anchor": "middle"
       }) +
@@ -97,9 +100,10 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
 }
 
 function renderPieChart(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>, total: number): string {
-  const cx = spec.export.width * 0.38;
-  const cy = spec.export.height * 0.57;
-  const radius = Math.min(spec.export.width, spec.export.height) * 0.23;
+  const tall = spec.export.height / spec.export.width > 1.15;
+  const cx = tall ? spec.export.width / 2 : spec.export.width * 0.38;
+  const cy = tall ? spec.export.height * 0.48 : spec.export.height * 0.57;
+  const radius = Math.min(spec.export.width, spec.export.height) * (tall ? 0.25 : 0.23);
   let angle = -90;
 
   const slices = points
@@ -122,7 +126,7 @@ function renderPieChart(spec: VisualSpec, theme: VisualTheme, points: ReturnType
     })
     .join("");
 
-  return group(slices + renderPartLegend(spec, theme, points, total));
+  return group(slices + (tall ? renderDashboardLegendGrid(spec, theme, points, total, spec.export.height * 0.7) : renderPartLegend(spec, theme, points, total)));
 }
 
 function renderDashboardVerticalLegend(
@@ -156,7 +160,7 @@ function renderDashboardVerticalLegend(
           textNode(formatNumber(positiveValue), {
             x: spec.export.width - 106,
             y,
-            fill: "#52525b",
+            fill: "#697386",
             "font-size": 13,
             "font-family": DASHBOARD_FONT,
             "text-anchor": "end"
@@ -164,7 +168,7 @@ function renderDashboardVerticalLegend(
           textNode(percent, {
             x: spec.export.width - 54,
             y,
-            fill: "#71717a",
+            fill: "#7b8496",
             "font-size": 13,
             "font-family": DASHBOARD_FONT,
             "text-anchor": "end"
@@ -183,6 +187,64 @@ function renderDashboardVerticalLegend(
           "font-size": 13,
           "font-family": DASHBOARD_FONT,
           "font-weight": 560
+        })
+      : "";
+
+  return rows + overflowNode;
+}
+
+function renderDashboardLegendGrid(
+  spec: VisualSpec,
+  theme: VisualTheme,
+  points: ReturnType<typeof extractAggregatedPoints>,
+  total: number,
+  startY: number
+): string {
+  const visible = points.slice(0, 8);
+  const left = 72;
+  const colWidth = 248;
+  const colGap = Math.max(36, spec.export.width - left * 2 - colWidth * 2);
+  const rowGap = 40;
+  const rows = visible
+    .map((point, index) => {
+      const color = theme.palette[index % theme.palette.length];
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = left + col * (colWidth + colGap);
+      const y = startY + row * rowGap;
+      const positiveValue = Math.max(0, point.value);
+      const percent = `${((positiveValue / total) * 100).toFixed(positiveValue === total ? 0 : 1)}%`;
+      return group(
+        circle({ cx: x, cy: y - 5, r: 5, fill: color }) +
+          textNode(point.label.slice(0, 8), {
+            x: x + 14,
+            y,
+            fill: "#2f3747",
+            "font-size": 13,
+            "font-family": DASHBOARD_FONT,
+            "font-weight": 520
+          }) +
+          textNode(percent, {
+            x: x + colWidth - 8,
+            y,
+            fill: "#7b8496",
+            "font-size": 12,
+            "font-family": DASHBOARD_FONT,
+            "text-anchor": "end"
+          })
+      );
+    })
+    .join("");
+
+  const overflow = points.length - visible.length;
+  const overflowNode =
+    overflow > 0
+      ? textNode(`其余 ${overflow} 项`, {
+          x: left,
+          y: startY + Math.ceil(visible.length / 2) * rowGap + 6,
+          fill: "#7b8496",
+          "font-size": 12,
+          "font-family": DASHBOARD_FONT
         })
       : "";
 
@@ -283,7 +345,7 @@ function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType
           textNode(formatNumber(point.value), {
             x: spec.export.width - 54,
             y,
-            fill: "#52525b",
+            fill: "#697386",
             "font-size": 13,
             "font-family": DASHBOARD_FONT,
             "text-anchor": "end"
@@ -334,7 +396,7 @@ function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): strin
       textNode(`${formatNumber(total)} / ${formatNumber(target)}`, {
         x: cx,
         y: cy + 30,
-        fill: "#52525b",
+        fill: "#697386",
         "font-size": 15,
         "font-family": DASHBOARD_FONT,
         "text-anchor": "middle"
@@ -350,7 +412,7 @@ function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): strin
       textNode("按当前数据合计自动换算目标区间", {
         x: spec.export.width * 0.66,
         y: 242,
-        fill: "#71717a",
+        fill: "#7b8496",
         "font-size": 14,
         "font-family": DASHBOARD_FONT
       })

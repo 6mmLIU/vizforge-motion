@@ -33,14 +33,14 @@ export function renderNetwork(spec: VisualSpec, theme: VisualTheme): string {
 
   const nodeSvg =
     circle({ cx, cy, r: 28, fill: theme.accent, opacity: 0.2, stroke: theme.palette[0], "stroke-width": 2 }) +
-    textNode("hub", { x: cx, y: cy + 5, fill: theme.text, "font-size": 13, "font-family": "Inter, Arial, sans-serif", "font-weight": 760, "text-anchor": "middle" }) +
+    textNode("hub", { x: cx, y: cy + 5, fill: theme.text, "font-size": 13, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "font-weight": 760, "text-anchor": "middle" }) +
     nodes
       .map((node, index) => {
         const delay = stagger(index, spec.motion.delayMs, Math.max(8, Math.min(55, 1100 / Math.max(points.length, 1))));
         return group(
           circle({ cx: Number(node.x.toFixed(2)), cy: Number(node.y.toFixed(2)), r: nodeRadius, fill: theme.palette[index % theme.palette.length], opacity: 0.92 }, animate("opacity", 0, 0.92, 420, delay, { easing: "ease-out" })) +
             (index % labelEvery === 0
-              ? textNode(node.label.slice(0, 9), { x: Number(node.x.toFixed(2)), y: Number((node.y + nodeRadius + 17).toFixed(2)), fill: theme.muted, "font-size": points.length > 40 ? 9 : 11, "font-family": "Inter, Arial, sans-serif", "text-anchor": "middle" })
+              ? textNode(node.label.slice(0, 9), { x: Number(node.x.toFixed(2)), y: Number((node.y + nodeRadius + 17).toFixed(2)), fill: theme.muted, "font-size": points.length > 40 ? 9 : 11, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "middle" })
               : "")
         );
       })

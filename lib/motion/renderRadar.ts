@@ -39,7 +39,7 @@ export function renderRadar(spec: VisualSpec, theme: VisualTheme): string {
       return (
         line({ x1: cx, y1: cy, x2: Number(end.x.toFixed(2)), y2: Number(end.y.toFixed(2)), stroke: theme.text, "stroke-width": 1, opacity: theme.axisOpacity }) +
         (points.length <= 24 || index % Math.ceil(points.length / 24) === 0
-          ? textNode(point.label.slice(0, 10), { x: Number(label.x.toFixed(2)), y: Number(label.y.toFixed(2)), fill: theme.muted, "font-size": 12, "font-family": "Inter, Arial, sans-serif", "text-anchor": "middle" })
+          ? textNode(point.label.slice(0, 10), { x: Number(label.x.toFixed(2)), y: Number(label.y.toFixed(2)), fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "middle" })
           : "")
       );
     })

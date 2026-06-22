@@ -3,7 +3,7 @@ import { extractAggregatedPoints, maxAbs, polarToCartesian } from "@/lib/motion/
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const DASHBOARD_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 type RoseLabel = {
   point: ReturnType<typeof extractAggregatedPoints>[number];
@@ -127,7 +127,7 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
           ? textNode(formatNumber(point.value), {
               x: Number(labelX.toFixed(2)),
               y: Number((labelY + 15).toFixed(2)),
-              fill: "#71717a",
+              fill: "#7b8496",
               "font-size": 11,
               "font-family": DASHBOARD_FONT,
               "text-anchor": anchor

@@ -3,7 +3,7 @@ import { extractPoints, gridLines, maxAbs } from "@/lib/motion/renderUtils";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const DASHBOARD_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 export function renderLineDraw(spec: VisualSpec, theme: VisualTheme): string {
   if (theme.id === "editorial-light") {
@@ -207,10 +207,10 @@ function renderSlopeChart(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   return (
-    line({ x1: leftX, x2: leftX, y1: plot.y, y2: plot.y + plot.height, stroke: "#e5e7eb", "stroke-width": 1 }) +
-    line({ x1: rightX, x2: rightX, y1: plot.y, y2: plot.y + plot.height, stroke: "#e5e7eb", "stroke-width": 1 }) +
-    textNode("起点", { x: leftX, y: plot.y - 18, fill: "#52525b", "font-size": 14, "font-family": DASHBOARD_FONT, "text-anchor": "middle" }) +
-    textNode("终点", { x: rightX, y: plot.y - 18, fill: "#52525b", "font-size": 14, "font-family": DASHBOARD_FONT, "text-anchor": "middle" }) +
+    line({ x1: leftX, x2: leftX, y1: plot.y, y2: plot.y + plot.height, stroke: "#edf1f6", "stroke-width": 1 }) +
+    line({ x1: rightX, x2: rightX, y1: plot.y, y2: plot.y + plot.height, stroke: "#edf1f6", "stroke-width": 1 }) +
+    textNode("起点", { x: leftX, y: plot.y - 18, fill: "#697386", "font-size": 14, "font-family": DASHBOARD_FONT, "text-anchor": "middle" }) +
+    textNode("终点", { x: rightX, y: plot.y - 18, fill: "#697386", "font-size": 14, "font-family": DASHBOARD_FONT, "text-anchor": "middle" }) +
     slopes
   );
 }
@@ -273,8 +273,8 @@ function renderBumpChart(spec: VisualSpec, theme: VisualTheme): string {
     .map((period, index) => {
       const x = plot.x + index * xStep;
       return (
-        line({ x1: x, x2: x, y1: plot.y, y2: plot.y + plot.height, stroke: "#e5e7eb", "stroke-width": 1 }) +
-        textNode(period, { x, y: plot.y + plot.height + 28, fill: "#52525b", "font-size": 13, "font-family": DASHBOARD_FONT, "text-anchor": "middle" })
+        line({ x1: x, x2: x, y1: plot.y, y2: plot.y + plot.height, stroke: "#edf1f6", "stroke-width": 1 }) +
+        textNode(period, { x, y: plot.y + plot.height + 28, fill: "#697386", "font-size": 13, "font-family": DASHBOARD_FONT, "text-anchor": "middle" })
       );
     })
     .join("");
@@ -304,7 +304,7 @@ function renderTimelineChart(spec: VisualSpec, theme: VisualTheme): string {
             ? textNode(point.label.slice(-5), {
                 x,
                 y: baselineY + 28,
-                fill: "#52525b",
+                fill: "#697386",
                 "font-size": 12,
                 "font-family": DASHBOARD_FONT,
                 "text-anchor": "middle"
@@ -326,7 +326,7 @@ function renderTimelineChart(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   return (
-    rect({ x: plot.x, y: baselineY - 2, width: plot.width, height: 4, rx: 2, fill: "#e5e7eb" }) +
+    rect({ x: plot.x, y: baselineY - 2, width: plot.width, height: 4, rx: 2, fill: "#edf1f6" }) +
     events
   );
 }

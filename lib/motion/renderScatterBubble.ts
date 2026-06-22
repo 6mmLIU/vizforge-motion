@@ -66,7 +66,7 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
                   y: Number((radius > 14 ? radius + 4 : -radius - 6).toFixed(2)),
                   fill: theme.text,
                   "font-size": tall ? 12 : 11,
-                  "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif",
+                  "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
                   "font-weight": 650,
                   "text-anchor": labelAnchor
                 })
@@ -80,9 +80,9 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
     .join("");
 
   const axes =
-    textNode(String(minX), { x: plot.x, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Inter, Arial, sans-serif" }) +
-    textNode(String(maxX), { x: plot.x + plot.width, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Inter, Arial, sans-serif", "text-anchor": "end" }) +
-    textNode(String(maxY), { x: plot.x - 10, y: plot.y + 4, fill: theme.muted, "font-size": 12, "font-family": "Inter, Arial, sans-serif", "text-anchor": "end" });
+    textNode(String(minX), { x: plot.x, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif" }) +
+    textNode(String(maxX), { x: plot.x + plot.width, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" }) +
+    textNode(String(maxY), { x: plot.x - 10, y: plot.y + 4, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" });
 
   return gridLines(plot, theme) + circles + axes;
 }

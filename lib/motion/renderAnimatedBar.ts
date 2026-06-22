@@ -4,7 +4,7 @@ import { extractPoints, gridLines, maxAbs } from "@/lib/motion/renderUtils";
 import type { CardMetric, VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const DASHBOARD_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string {
   if (theme.id === "editorial-light") {
@@ -52,7 +52,7 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
             count: points.length,
             fill: theme.muted,
             fontSize: theme.typography.label,
-            fontFamily: "Inter, Arial, sans-serif"
+            fontFamily: "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif"
           }) +
           textNode(
             point.value.toLocaleString(),
@@ -62,7 +62,7 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
               fill: theme.text,
               opacity: 1,
               "font-size": theme.typography.label,
-              "font-family": "Inter, Arial, sans-serif",
+              "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
               "font-weight": 700,
               "text-anchor": "middle"
             },
@@ -82,15 +82,15 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractPoints(spec, 200);
   const values = points.map((point) => Math.max(0, point.value));
   const maxValue = maxAbs(points);
-  const tickMax = maxValue <= 60 ? 60 : Math.ceil(maxValue / 4) * 4;
+  const tickMax = maxValue <= 60 ? 60 : Math.ceil((maxValue * 1.12) / 4) * 4;
   const metrics = (spec.card?.metrics ?? []).slice(0, 4);
   const hasMetrics = metrics.length > 0;
-  const plotTop = hasMetrics ? (tall ? 278 : Math.min(204, Math.max(182, height * 0.41))) : tall ? 182 : 122;
-  const plotBottom = height - (tall ? 132 : 84);
+  const plotTop = hasMetrics ? (tall ? 314 : Math.min(208, Math.max(184, height * 0.41))) : tall ? 196 : 122;
+  const plotBottom = height - (tall ? 122 : 84);
   const plot = {
-    x: 88,
+    x: tall ? 84 : 88,
     y: plotTop,
-    width: width - 176,
+    width: width - (tall ? 168 : 176),
     height: Math.max(110, plotBottom - plotTop)
   };
   const baseY = plot.y + plot.height;
@@ -106,76 +106,39 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
         textNode(formatTick(tick), {
           x: plot.x - 18,
           y: Number((y + 5).toFixed(2)),
-          fill: "#52525b",
-          "font-size": 14,
+          fill: "#8a93a4",
+          "font-size": 12,
           "font-family": DASHBOARD_FONT,
           "text-anchor": "end"
         }) +
         path({
           d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`,
           fill: "none",
-          stroke: "#e5e7eb",
-          "stroke-width": 1
+          stroke: "#edf1f6",
+          "stroke-width": 0.9
         })
       );
     })
     .join("");
 
-  const kpis = metrics
-    .map((metric, index) => {
-      const columnWidth = (width - 80) / metrics.length;
-      const x = 40 + index * columnWidth;
-      const value = formatMetricValue(metric.value, metric.prefix, metric.suffix);
-      const trend = metricTrend(metric);
-      const valueSize = tall ? (metrics.length > 3 ? 27 : 31) : metrics.length > 3 ? 25 : 28;
-      const deltaX = x + Math.min(columnWidth - 54, Math.max(66, value.length * valueSize * 0.52 + 18));
-      const valueY = tall ? 188 : 122;
-      const labelY = tall ? 222 : 152;
-
-      return (
-        textNode(value, {
-          x,
-          y: valueY,
-          fill: theme.text,
-          "font-size": valueSize,
-          "font-family": DASHBOARD_FONT,
-          "font-weight": 720
-        }) +
-        (trend
-          ? textNode(trend.text, {
-              x: Number(deltaX.toFixed(2)),
-              y: valueY - 2,
-              fill: trend.fill,
-              "font-size": tall ? 14 : 15,
-              "font-family": DASHBOARD_FONT,
-              "font-weight": 520
-            })
-          : "") +
-        textNode(metric.label, {
-          x,
-          y: labelY,
-          fill: "#52525b",
-          "font-size": metrics.length > 3 ? 14 : 17,
-          "font-family": DASHBOARD_FONT
-        })
-      );
-    })
-    .join("");
+  const kpis = hasMetrics ? renderKpiStrip(metrics, width, tall ? 162 : 108, tall) : "";
 
   const periodLabel = spec.card?.periodLabel?.slice(0, 24);
-  const pillWidth = Math.min(216, Math.max(112, (periodLabel?.length ?? 0) * 12 + 54));
+  const pillWidth = Math.min(186, Math.max(98, (periodLabel?.length ?? 0) * 10 + 48));
   const filterPill = periodLabel
-    ? rect({ x: width - pillWidth - 40, y: 40, width: pillWidth, height: 48, rx: 20, fill: "#f0f1f3" }) +
+    ? rect({ x: width - pillWidth - 44, y: tall ? 54 : 38, width: pillWidth, height: 38, rx: 19, fill: "#eef2f7" }) +
       textNode(periodLabel, {
-        x: width - pillWidth / 2 - 40,
-        y: 71,
-        fill: theme.text,
-        "font-size": 18,
+        x: width - pillWidth / 2 - 44,
+        y: tall ? 79 : 63,
+        fill: "#2f3747",
+        "font-size": 14,
         "font-family": DASHBOARD_FONT,
-        "font-weight": 650,
+        "font-weight": 560,
         "text-anchor": "middle"
       })
     : "";
+  const maxIndex = values.indexOf(Math.max(...values));
+  const lastIndex = Math.max(0, points.length - 1);
 
   const bars = points
     .map((point, index) => {
@@ -187,6 +150,8 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
       const monthMatch = rawLabel.match(/(?:^|[-/])(\d{1,2})$/);
       const label = monthMatch ? monthMatch[1].padStart(2, "0") : rawLabel;
       const delay = stagger(index, spec.motion.delayMs, Math.max(35, spec.motion.staggerMs));
+      const fill = barFill(theme, index, points.length, maxIndex, lastIndex);
+      const showValue = points.length <= 14 && barHeight > 22;
       return (
         rect(
           {
@@ -194,20 +159,32 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
             y: Number(y.toFixed(2)),
             width: Number(barWidth.toFixed(2)),
             height: Number(barHeight.toFixed(2)),
-            rx: Number((barWidth / 2).toFixed(2)),
-            fill: theme.palette[index % theme.palette.length] ?? theme.accent
+            rx: Math.min(theme.barRadius, Number((barWidth * 0.38).toFixed(2))),
+            fill: fill.color,
+            opacity: fill.opacity
           },
           animate("height", 0, Number(barHeight.toFixed(2)), spec.motion.durationMs, delay, spec.motion) +
             animate("y", baseY, Number(y.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
         ) +
+        (showValue
+          ? textNode(formatTick(value), {
+              x: Number((x + barWidth / 2).toFixed(2)),
+              y: Number((y - 9).toFixed(2)),
+              fill: index === maxIndex ? "#f06a3f" : "#8a93a4",
+              "font-size": 11,
+              "font-family": DASHBOARD_FONT,
+              "font-weight": 520,
+              "text-anchor": "middle"
+            })
+          : "") +
         renderAdaptiveAxisLabel(label, {
           x: x + barWidth / 2,
-          y: baseY + 34,
+          y: baseY + 28,
           slot,
           index,
           count: points.length,
-          fill: "#3f3f46",
-          fontSize: slot < 18 ? 11 : 14,
+          fill: "#697386",
+          fontSize: slot < 18 ? 10 : 12,
           fontFamily: DASHBOARD_FONT
         })
       );
@@ -422,12 +399,12 @@ function dashboardGrid(plot: { x: number; y: number; width: number; height: numb
         textNode(formatTick(tick), {
           x: plot.x - 18,
           y: Number((y + 5).toFixed(2)),
-          fill: "#52525b",
+          fill: "#697386",
           "font-size": 14,
           "font-family": DASHBOARD_FONT,
           "text-anchor": "end"
         }) +
-        path({ d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#e5e7eb", "stroke-width": 1 })
+        path({ d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#edf1f6", "stroke-width": 1 })
       );
     })
     .join("");
@@ -442,12 +419,12 @@ function dashboardWaterfallGrid(plot: { x: number; y: number; width: number; hei
         textNode(formatTick(tick), {
           x: plot.x - 18,
           y: Number((y + 5).toFixed(2)),
-          fill: "#52525b",
+          fill: "#697386",
           "font-size": 14,
           "font-family": DASHBOARD_FONT,
           "text-anchor": "end"
         }) +
-        path({ d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#e5e7eb", "stroke-width": 1 })
+        path({ d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#edf1f6", "stroke-width": 1 })
       );
     })
     .join("");
@@ -463,7 +440,7 @@ function renderLegend(labels: string[], theme: VisualTheme, width: number, y: nu
           textNode(label, {
             x: startX + index * itemWidth + 28,
             y,
-            fill: "#52525b",
+            fill: "#697386",
             "font-size": 13,
             "font-family": DASHBOARD_FONT,
             "font-weight": 580
@@ -471,6 +448,72 @@ function renderLegend(labels: string[], theme: VisualTheme, width: number, y: nu
       )
     )
     .join("");
+}
+
+function renderKpiStrip(metrics: CardMetric[], width: number, top: number, tall: boolean): string {
+  const left = tall ? 48 : 40;
+  const gap = tall ? 12 : 10;
+  const available = width - left * 2 - gap * (metrics.length - 1);
+  const itemWidth = available / Math.max(1, metrics.length);
+  const itemHeight = tall ? 88 : 72;
+
+  return metrics
+    .map((metric, index) => {
+      const x = left + index * (itemWidth + gap);
+      const value = formatMetricValue(metric.value, metric.prefix, metric.suffix);
+      const trend = metricTrend(metric);
+      const valueSize = tall ? (metrics.length > 3 ? 22 : 25) : metrics.length > 3 ? 20 : 23;
+
+      return (
+        rect({
+          x,
+          y: top,
+          width: Number(itemWidth.toFixed(2)),
+          height: itemHeight,
+          rx: 18,
+          fill: index === 0 ? "#f6f8fb" : "#fbfcfe",
+          stroke: "#edf1f6",
+          "stroke-width": 0.8
+        }) +
+        textNode(metric.label, {
+          x: x + 16,
+          y: top + 24,
+          fill: "#7b8496",
+          "font-size": tall ? 12 : 11,
+          "font-family": DASHBOARD_FONT,
+          "font-weight": 460
+        }) +
+        textNode(value, {
+          x: x + 16,
+          y: top + (tall ? 58 : 52),
+          fill: "#182033",
+          "font-size": valueSize,
+          "font-family": DASHBOARD_FONT,
+          "font-weight": 620
+        }) +
+        (trend
+          ? textNode(trend.text, {
+              x: Number((x + itemWidth - 18).toFixed(2)),
+              y: top + (tall ? 57 : 51),
+              fill: trend.fill,
+              "font-size": tall ? 11 : 10,
+              "font-family": DASHBOARD_FONT,
+              "font-weight": 520,
+              "text-anchor": "end"
+            })
+          : "")
+      );
+    })
+    .join("");
+}
+
+function barFill(theme: VisualTheme, index: number, count: number, maxIndex: number, lastIndex: number): { color: string; opacity: number } {
+  if (count <= 8) {
+    return { color: theme.palette[index % theme.palette.length] ?? theme.accent, opacity: 0.94 };
+  }
+  if (index === maxIndex) return { color: theme.palette[2] ?? "#f06a3f", opacity: 1 };
+  if (index === lastIndex) return { color: theme.palette[1] ?? "#16a394", opacity: 0.98 };
+  return { color: theme.palette[0] ?? theme.accent, opacity: 0.46 };
 }
 
 function stackShares(index: number): [number, number, number] {
@@ -642,6 +685,6 @@ function metricTrend(metric: CardMetric): { text: string; fill: string } | null 
   if (!metric.trend) return null;
   const trend = metric.trend;
   const icon = trend === "down" ? "↓" : trend === "neutral" ? "→" : "↑";
-  const fill = trend === "down" ? "#dc2626" : trend === "neutral" ? "#71717a" : "#15803d";
+  const fill = trend === "down" ? "#d14343" : trend === "neutral" ? "#7b8496" : "#0f8a5f";
   return { text: `${icon} ${metric.delta}`, fill };
 }

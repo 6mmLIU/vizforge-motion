@@ -47,7 +47,7 @@ export function renderTreemap(spec: VisualSpec, theme: VisualTheme): string {
             y: y + 26,
             fill: theme.background,
             "font-size": 13,
-            "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif",
+            "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
             "font-weight": 760
           })
       );

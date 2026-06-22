@@ -4,7 +4,7 @@ import { stagger } from "@/lib/motion/timeline";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
+const FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 
 export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme): string {
   const points = orderedPoints(extractPoints(spec, 200), spec.story === "ranking");
@@ -80,7 +80,7 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
     textNode("当前排名", {
       x: plot.x,
       y: tall ? 150 : 104,
-      fill: "#52525b",
+      fill: "#697386",
       "font-size": tall ? 14 : 13,
       "font-family": FONT,
       "font-weight": 650
@@ -113,7 +113,7 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
               "font-family": FONT,
               "font-weight": 640
             }) +
-            rect({ x: barX, y: Number(barY.toFixed(2)), width: barWidth, height: row.barHeight, rx: row.barHeight / 2, fill: "#e5e7eb" }) +
+            rect({ x: barX, y: Number(barY.toFixed(2)), width: barWidth, height: row.barHeight, rx: row.barHeight / 2, fill: "#edf1f6" }) +
             rect(
               {
                 x: barX,

@@ -153,8 +153,8 @@ const layoutSizes = {
 const palettePresets = [
   { name: "Hero 蓝", colors: ["#0a84ff", "#38bdf8", "#22c55e", "#f59e0b", "#f472b6"] },
   { name: "极光科技", colors: ["#30f6ff", "#a855f7", "#36d399", "#f8d66d", "#ff7ab6"] },
-  { name: "报告克制", colors: ["#111827", "#475569", "#0ea5e9", "#14b8a6", "#f59e0b"] },
-  { name: "内容传播", colors: ["#2563eb", "#ec4899", "#f97316", "#10b981", "#8b5cf6"] }
+  { name: "报告克制", colors: ["#111827", "#475569", "#0ea5e9", "#16a394", "#f59e0b"] },
+  { name: "内容传播", colors: ["#2f63d8", "#d84d8b", "#f06a3f", "#10b981", "#7b61ff"] }
 ];
 
 const templatePresets = [
