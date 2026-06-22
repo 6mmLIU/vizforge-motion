@@ -69,7 +69,7 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
   const tall = height / width > 1.15;
   const ranked = orderedPoints(points, true).slice(0, 8);
   const max = maxAbs(ranked);
-  const plot = { x: 48, y: tall ? 172 : 118, width: width - 96, height: height - (tall ? 278 : 180) };
+  const plot = { x: 48, y: tall ? 204 : 118, width: width - 96, height: height - (tall ? 310 : 180) };
   const row = horizontalRowLayout(plot.height, ranked.length, tall);
   const rankWidth = 38;
   const labelWidth = Math.min(140, Math.max(82, longestLabelWidth(ranked, row.labelSize) + 8));
@@ -79,7 +79,7 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
   return (
     textNode("当前排名", {
       x: plot.x,
-      y: tall ? 150 : 104,
+      y: tall ? 188 : 104,
       fill: "#697386",
       "font-size": tall ? 14 : 13,
       "font-family": FONT,
@@ -148,9 +148,9 @@ function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, poin
   const max = maxAbs(points);
   const plot = {
     x: 48,
-    y: tall ? 174 : 124,
+    y: tall ? 204 : 124,
     width: width - 96,
-    height: height - (tall ? 280 : 186)
+    height: height - (tall ? 310 : 186)
   };
   const row = horizontalRowLayout(plot.height, points.length, tall);
   const labelWidth = Math.min(156, Math.max(86, longestLabelWidth(points, row.labelSize) + 8));

@@ -85,7 +85,7 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
   const tickMax = maxValue <= 60 ? 60 : Math.ceil((maxValue * 1.12) / 4) * 4;
   const metrics = (spec.card?.metrics ?? []).slice(0, 4);
   const hasMetrics = metrics.length > 0;
-  const plotTop = hasMetrics ? (tall ? 314 : Math.min(208, Math.max(184, height * 0.41))) : tall ? 196 : 122;
+  const plotTop = hasMetrics ? (tall ? 344 : Math.min(208, Math.max(184, height * 0.41))) : tall ? 204 : 122;
   const plotBottom = height - (tall ? 122 : 84);
   const plot = {
     x: tall ? 84 : 88,
@@ -121,7 +121,7 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
     })
     .join("");
 
-  const kpis = hasMetrics ? renderKpiStrip(metrics, width, tall ? 162 : 108, tall) : "";
+  const kpis = hasMetrics ? renderKpiStrip(metrics, width, tall ? 188 : 108, tall) : "";
 
   const periodLabel = spec.card?.periodLabel?.slice(0, 24);
   const pillWidth = Math.min(186, Math.max(98, (periodLabel?.length ?? 0) * 10 + 48));
