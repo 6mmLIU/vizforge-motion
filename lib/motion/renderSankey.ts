@@ -1,6 +1,6 @@
 import { coerceNumber } from "@/lib/data/inferSchema";
 import { animate, group, path, rect, textNode } from "@/lib/motion/svgPrimitives";
-import { resolveFields } from "@/lib/motion/renderUtils";
+import { extractAggregatedPoints, resolveFields } from "@/lib/motion/renderUtils";
 import { stagger } from "@/lib/motion/timeline";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
@@ -10,11 +10,18 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
   const sourceField = spec.mappings?.source ?? "source";
   const targetField = spec.mappings?.target ?? "target";
   const valueField = fields.value;
-  const links = spec.data.rows.slice(0, 200).map((row, index) => ({
-    source: labelFor(row[sourceField] ?? row[fields.category], `Source ${index + 1}`),
-    target: labelFor(row[targetField], `Target ${index + 1}`),
-    value: Math.max(1, coerceNumber(row[valueField]) ?? 1)
-  }));
+  const hasExplicitFlowFields = spec.data.rows.some((row) => hasText(row[sourceField]) && hasText(row[targetField]));
+  const links = hasExplicitFlowFields
+    ? spec.data.rows.slice(0, 200).map((row, index) => ({
+        source: labelFor(row[sourceField] ?? row[fields.category], `Source ${index + 1}`),
+        target: labelFor(row[targetField], `Target ${index + 1}`),
+        value: Math.max(1, coerceNumber(row[valueField]) ?? 1)
+      }))
+    : extractAggregatedPoints(spec, 24).map((point) => ({
+        source: "总量",
+        target: point.label,
+        value: Math.max(1, point.value)
+      }));
   const sources = Array.from(new Set(links.map((link) => link.source)));
   const targets = Array.from(new Set(links.map((link) => link.target)));
   const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
@@ -37,12 +44,13 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
           rect({ x: plot.x - 8, y: Number((y - nodeHeight / 2).toFixed(2)), width: 16, height: Number(nodeHeight.toFixed(2)), rx: Math.min(7, nodeHeight / 2), fill: theme.palette[index % theme.palette.length], opacity: 0.82 }) +
           (index % sourceLabelEvery === 0
             ? textNode(name.slice(0, 10), {
-                x: plot.x + 22,
+                x: plot.x - 22,
                 y: Number((y + 5).toFixed(2)),
                 fill: theme.text,
                 "font-size": sources.length > 24 ? (tall ? 10 : 9) : tall ? 14 : 12,
                 "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
-                "font-weight": tall ? 650 : undefined
+                "font-weight": tall ? 650 : undefined,
+                "text-anchor": "end"
               })
             : "")
         );
@@ -55,13 +63,12 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
           rect({ x: plot.x + plot.width - 8, y: Number((y - nodeHeight / 2).toFixed(2)), width: 16, height: Number(nodeHeight.toFixed(2)), rx: Math.min(7, nodeHeight / 2), fill: theme.palette[(index + sources.length) % theme.palette.length], opacity: 0.82 }) +
           (index % targetLabelEvery === 0
             ? textNode(name.slice(0, 10), {
-                x: plot.x + plot.width - 22,
+                x: plot.x + plot.width + 22,
                 y: Number((y + 5).toFixed(2)),
                 fill: theme.text,
                 "font-size": targets.length > 24 ? (tall ? 10 : 9) : tall ? 14 : 12,
                 "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
-                "font-weight": tall ? 650 : undefined,
-                "text-anchor": "end"
+                "font-weight": tall ? 650 : undefined
               })
             : "")
         );
@@ -117,4 +124,8 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
 function labelFor(value: unknown, fallback: string): string {
   const text = value === undefined || value === null ? "" : String(value).trim();
   return text || fallback;
+}
+
+function hasText(value: unknown): boolean {
+  return value !== undefined && value !== null && String(value).trim() !== "";
 }

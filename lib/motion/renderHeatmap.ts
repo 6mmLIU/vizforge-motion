@@ -20,7 +20,11 @@ export function renderHeatmap(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractPoints(spec, 400);
   const fields = resolveFields(spec);
   const dated = calendarCellsFromDates(points, fields.category);
-  const cells = dated ?? calendarCellsFromOrder(points);
+  if (!dated || points.length < 42) {
+    return renderMatrixHeatmap(spec, theme, points);
+  }
+
+  const cells = dated;
   const max = Math.max(maxAbs(points), 1);
   const weeks = Math.max(1, Math.max(...cells.map((cell) => cell.col), 0) + 1);
   const compact = spec.export.height <= 320;
@@ -98,14 +102,71 @@ function calendarCellsFromDates(points: Point[], categoryField: string): Calenda
   });
 }
 
-function calendarCellsFromOrder(points: Point[]): CalendarCell[] {
-  return points.map((point, index) => ({
-    index,
-    col: Math.floor(index / 7),
-    row: index % 7,
-    point,
-    value: Math.max(0, point.value)
-  }));
+function renderMatrixHeatmap(spec: VisualSpec, theme: VisualTheme, points: Point[]): string {
+  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
+  const plot = {
+    x: tall ? 58 : 54,
+    y: tall ? 224 : 126,
+    width: spec.export.width - (tall ? 116 : 108),
+    height: spec.export.height - (tall ? 410 : 216)
+  };
+  const max = Math.max(maxAbs(points), 1);
+  const count = Math.max(1, points.length);
+  const cols = count <= 4 ? 2 : tall ? 3 : Math.min(6, Math.ceil(Math.sqrt(count * 1.4)));
+  const rows = Math.ceil(count / cols);
+  const gap = tall ? 12 : 8;
+  const cellWidth = Math.max(42, (plot.width - gap * (cols - 1)) / cols);
+  const cellHeight = Math.max(42, Math.min(tall ? 126 : 88, (plot.height - gap * (rows - 1)) / rows));
+  const gridWidth = cols * cellWidth + (cols - 1) * gap;
+  const gridHeight = rows * cellHeight + (rows - 1) * gap;
+  const startX = plot.x + Math.max(0, (plot.width - gridWidth) / 2);
+  const startY = plot.y + Math.max(0, (plot.height - gridHeight) / 2);
+
+  return points
+    .map((point, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const x = startX + col * (cellWidth + gap);
+      const y = startY + row * (cellHeight + gap);
+      const value = Math.max(0, point.value);
+      const fill = heatColor(value, max, theme.accent);
+      const strong = value / max >= 0.5;
+      const delay = stagger(index, spec.motion.delayMs, Math.min(42, spec.motion.staggerMs));
+      return (
+        rect(
+          {
+            x: Number(x.toFixed(2)),
+            y: Number(y.toFixed(2)),
+            width: Number(cellWidth.toFixed(2)),
+            height: Number(cellHeight.toFixed(2)),
+            rx: tall ? 18 : 12,
+            fill,
+            stroke: "#e6edf5",
+            "stroke-width": 0.8
+          },
+          animate("opacity", 0.24, 1, Math.min(560, spec.motion.durationMs), delay, { easing: "ease-out" })
+        ) +
+        textNode(point.label.slice(0, tall ? 12 : 10), {
+          x: x + cellWidth / 2,
+          y: y + cellHeight / 2 - (tall ? 8 : 5),
+          fill: strong ? "#ffffff" : theme.text,
+          "font-size": tall ? 15 : 12,
+          "font-family": FONT,
+          "font-weight": 680,
+          "text-anchor": "middle"
+        }) +
+        textNode(value.toLocaleString("zh-CN"), {
+          x: x + cellWidth / 2,
+          y: y + cellHeight / 2 + (tall ? 20 : 16),
+          fill: strong ? "#ffffff" : theme.muted,
+          "font-size": tall ? 22 : 16,
+          "font-family": FONT,
+          "font-weight": 760,
+          "text-anchor": "middle"
+        })
+      );
+    })
+    .join("");
 }
 
 function renderTabs(width: number, theme: VisualTheme, y: number): string {
@@ -205,11 +266,11 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 function parseDate(value: unknown): Date | null {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
   const text = String(value ?? "").trim();
-  const match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  const match = text.match(/^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/);
   if (!match) return null;
   const year = Number(match[1]);
   const month = Number(match[2]) - 1;
-  const day = Number(match[3]);
+  const day = Number(match[3] ?? 1);
   const date = new Date(Date.UTC(year, month, day));
   return Number.isNaN(date.getTime()) ? null : date;
 }

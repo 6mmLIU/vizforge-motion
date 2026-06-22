@@ -348,6 +348,56 @@ describe("renderAnimatedSvg", () => {
     expect(result.compatibility.safe).toBe(true);
   });
 
+  it("renders short heatmap datasets as readable matrix tiles instead of a tiny calendar", () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      month: `2026-${String(index + 1).padStart(2, "0")}`,
+      value: 20 + index * 3
+    }));
+    const result = renderAnimatedSvg({
+      ...DEFAULT_VISUAL_SPEC,
+      title: "月度热力",
+      subtitle: undefined,
+      type: "heatmap",
+      story: "change-over-time",
+      theme: "editorial-light",
+      card: undefined,
+      data: { rows },
+      mappings: { category: "month", value: "value", x: "month", y: "value" }
+    });
+
+    expect(result.svg).toContain(">2026-01<");
+    expect(result.svg).toContain(">53<");
+    expect(result.svg).not.toContain(">每日<");
+    expect(result.svg).not.toContain(">每周<");
+    expect(result.compatibility.safe).toBe(true);
+  });
+
+  it("spreads date-like scatter x values across the plot instead of parsing every month as one number", () => {
+    const result = renderAnimatedSvg({
+      ...DEFAULT_VISUAL_SPEC,
+      type: "scatter",
+      story: "correlation",
+      theme: "editorial-light",
+      card: undefined,
+      data: {
+        rows: [
+          { month: "2026-01", channel: "自然流量", value: 29, orders: 8 },
+          { month: "2026-02", channel: "付费广告", value: 52, orders: 18 },
+          { month: "2026-03", channel: "公众号", value: 34, orders: 13 },
+          { month: "2026-04", channel: "小红书", value: 16, orders: 5 }
+        ]
+      },
+      mappings: { x: "month", y: "orders", category: "channel", value: "value" }
+    });
+
+    const xPositions = [...result.svg.matchAll(/transform="translate\(([\d.]+) /g)].map((match) => Number(match[1]));
+    expect(new Set(xPositions.map((value) => value.toFixed(1))).size).toBeGreaterThan(2);
+    expect(Math.max(...xPositions) - Math.min(...xPositions)).toBeGreaterThan(300);
+    expect(result.svg).toContain(">2026-01<");
+    expect(result.svg).toContain(">2026-04<");
+    expect(result.compatibility.safe).toBe(true);
+  });
+
   it("renders metric-card from real card and row data without defaulting missing trend", () => {
     const result = renderAnimatedSvg({
       ...DEFAULT_VISUAL_SPEC,
@@ -443,6 +493,53 @@ describe("renderAnimatedSvg", () => {
 
     expect(result.svg.match(/attributeName="stroke-dashoffset"/g) ?? []).toHaveLength(20);
     expect(result.palette).toHaveLength(40);
+    expect(result.compatibility.safe).toBe(true);
+  });
+
+  it("renders category/value sankey data as an aggregate flow without fake target labels", () => {
+    const result = renderAnimatedSvg({
+      ...DEFAULT_VISUAL_SPEC,
+      type: "sankey",
+      story: "flow",
+      theme: "editorial-light",
+      card: undefined,
+      data: {
+        rows: [
+          { channel: "自然流量", value: 118 },
+          { channel: "付费广告", value: 96 },
+          { channel: "公众号", value: 82 }
+        ]
+      },
+      mappings: { category: "channel", value: "value" }
+    });
+
+    expect(result.svg).toContain(">总量<");
+    expect(result.svg).toContain(">自然流量<");
+    expect(result.svg).not.toContain("Target 1");
+    expect(result.compatibility.safe).toBe(true);
+  });
+
+  it("renders treemap tiles with direct labels and values for composition data", () => {
+    const result = renderAnimatedSvg({
+      ...DEFAULT_VISUAL_SPEC,
+      type: "treemap",
+      story: "part-to-whole",
+      theme: "editorial-light",
+      card: undefined,
+      data: {
+        rows: [
+          { channel: "自然流量", value: 118 },
+          { channel: "付费广告", value: 96 },
+          { channel: "公众号", value: 82 },
+          { channel: "小红书", value: 77 }
+        ]
+      },
+      mappings: { category: "channel", value: "value" }
+    });
+
+    expect(result.svg).toContain(">自然流量<");
+    expect(result.svg).toContain(">118<");
+    expect(result.svg).toContain("%<");
     expect(result.compatibility.safe).toBe(true);
   });
 

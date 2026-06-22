@@ -46,22 +46,27 @@ export function recommendVisual(rows: DataRow[], requested?: Partial<{ type: Vis
       };
     }
 
-    const partToWholeTypes: VisualType[] = ["donut", "pie", "arc", "rose", "gauge"];
-    const timeTypes: VisualType[] = ["line", "area", "timeline", "slope", "bump", "line-race"];
+    const partToWholeTypes: VisualType[] = ["donut", "pie", "arc", "rose", "gauge", "treemap"];
+    const timeTypes: VisualType[] = ["line", "area", "timeline", "slope", "bump", "line-race", "heatmap"];
+    const multiSeriesBarTypes: VisualType[] = ["stacked-bar", "grouped-bar"];
     const categoryForRequested = partToWholeTypes.includes(requested.type)
       ? category ?? columns.find((column) => column.name !== value && column.name !== date)?.name ?? date ?? value
       : timeTypes.includes(requested.type)
         ? date ?? category ?? columns.find((column) => column.name !== value)?.name ?? value
+        : requested.type === "sankey"
+          ? category ?? date ?? columns.find((column) => column.name !== value)?.name ?? value
         : requested.type === "metric-card"
           ? date ?? category ?? columns.find((column) => column.name !== value)?.name ?? value
         : magnitudeCategory ?? columns.find((column) => column.name !== value)?.name ?? value;
-    const seriesForRequested = timeTypes.includes(requested.type) && category && category !== categoryForRequested ? category : undefined;
+    const seriesForRequested = (timeTypes.includes(requested.type) || multiSeriesBarTypes.includes(requested.type)) && category && category !== categoryForRequested ? category : undefined;
     const storyForRequested: VisualStory =
       requested.story ??
       (partToWholeTypes.includes(requested.type)
         ? "part-to-whole"
         : timeTypes.includes(requested.type)
           ? "change-over-time"
+          : requested.type === "sankey" || requested.type === "network"
+            ? "flow"
           : "magnitude");
 
     return {

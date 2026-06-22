@@ -285,37 +285,44 @@ function renderBumpChart(spec: VisualSpec, theme: VisualTheme): string {
 function renderTimelineChart(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractPoints(spec, 18);
   const tall = spec.export.height / spec.export.width > 1.15;
-  const plot = { x: 72, y: tall ? 188 : 142, width: spec.export.width - 144, height: spec.export.height - (tall ? 318 : 238) };
-  const baselineY = plot.y + plot.height * 0.62;
+  const plot = {
+    x: tall ? 64 : 72,
+    y: tall ? 226 : 142,
+    width: spec.export.width - (tall ? 128 : 144),
+    height: spec.export.height - (tall ? 438 : 238)
+  };
+  const baselineY = plot.y + plot.height * (tall ? 0.72 : 0.64);
   const max = maxAbs(points);
   const step = points.length > 1 ? plot.width / (points.length - 1) : 0;
 
   const events = points
     .map((point, index) => {
       const x = plot.x + index * step;
-      const stem = 22 + (Math.max(0, point.value) / max) * (plot.height * 0.42);
+      const ratio = Math.max(0, point.value) / max;
+      const stem = (tall ? 36 : 24) + ratio * (plot.height * (tall ? 0.54 : 0.44));
       const y = baselineY - stem;
       const color = theme.palette[index % theme.palette.length];
-      const showLabel = index === 0 || index === points.length - 1 || index % Math.ceil(points.length / 6) === 0;
+      const showLabel = points.length <= 12 || index === 0 || index === points.length - 1 || index % Math.ceil(points.length / 6) === 0;
       return group(
-        line({ x1: x, x2: x, y1: baselineY, y2: Number(y.toFixed(2)), stroke: color, "stroke-width": 2, opacity: 0.72 }) +
-          circle({ cx: x, cy: Number(y.toFixed(2)), r: 6, fill: color }) +
+        line({ x1: x, x2: x, y1: baselineY, y2: Number(y.toFixed(2)), stroke: color, "stroke-width": tall ? 2.8 : 2, opacity: 0.72 }) +
+          circle({ cx: x, cy: Number(y.toFixed(2)), r: tall ? 7.5 : 6, fill: color, stroke: theme.background, "stroke-width": tall ? 2 : 1.4 }) +
           (showLabel
-            ? textNode(point.label.slice(-5), {
+            ? textNode(formatTimelineLabel(point.label), {
                 x,
-                y: baselineY + 28,
+                y: baselineY + (tall ? 36 : 28),
                 fill: "#697386",
-                "font-size": 12,
+                "font-size": tall ? 15 : 12,
                 "font-family": DASHBOARD_FONT,
+                "font-weight": tall ? 620 : undefined,
                 "text-anchor": "middle"
               })
             : "") +
           (showLabel
             ? textNode(formatNumber(point.value), {
                 x,
-                y: Number((y - 12).toFixed(2)),
+                y: Number((y - (tall ? 16 : 12)).toFixed(2)),
                 fill: theme.text,
-                "font-size": 12,
+                "font-size": tall ? 15 : 12,
                 "font-family": DASHBOARD_FONT,
                 "text-anchor": "middle",
                 "font-weight": 650
@@ -326,7 +333,7 @@ function renderTimelineChart(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   return (
-    rect({ x: plot.x, y: baselineY - 2, width: plot.width, height: 4, rx: 2, fill: "#edf1f6" }) +
+    rect({ x: plot.x, y: baselineY - (tall ? 2.5 : 2), width: plot.width, height: tall ? 5 : 4, rx: tall ? 2.5 : 2, fill: "#edf1f6" }) +
     events
   );
 }
@@ -359,6 +366,13 @@ function renderEndpointLabels(points: ReturnType<typeof extractPoints>, plot: { 
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? value.toLocaleString("zh-CN") : value.toLocaleString("zh-CN", { maximumFractionDigits: 1 });
+}
+
+function formatTimelineLabel(label: string): string {
+  const match = label.match(/^\d{4}[-/](\d{1,2})(?:[-/](\d{1,2}))?$/);
+  if (match?.[2]) return `${Number(match[1])}/${Number(match[2])}`;
+  if (match?.[1]) return `${Number(match[1])}月`;
+  return label.slice(0, 8);
 }
 
 function coordinatesToPath(coordinates: Array<{ x: number; y: number }>): string {
