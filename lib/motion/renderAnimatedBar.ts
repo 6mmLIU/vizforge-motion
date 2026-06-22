@@ -23,12 +23,15 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
   const barWidth = band.barWidth;
   const baseY = plot.y + plot.height;
 
+  const maxIdx = points.length
+    ? points.reduce((acc, point, idx) => (Math.max(0, point.value) > Math.max(0, points[acc].value) ? idx : acc), 0)
+    : 0;
   const bars = points
     .map((point, index) => {
       const height = Math.max(3, (Math.max(0, point.value) / max) * plot.height);
       const x = band.startX + index * band.slot;
       const y = baseY - height;
-      const color = theme.palette[index % theme.palette.length];
+      const baseColor = theme.accent ?? theme.palette[0];
       const delay = stagger(index, spec.motion.delayMs, spec.motion.staggerMs);
       return group(
         rect(
@@ -38,8 +41,8 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
             width: Number(barWidth.toFixed(2)),
             height: Number(height.toFixed(2)),
             rx: theme.barRadius,
-            fill: index === 0 ? "url(#vizforgeBar)" : color,
-            opacity: 0.94
+            fill: index === maxIdx ? "url(#vizforgeBar)" : baseColor,
+            opacity: index === maxIdx ? 1 : 0.72
           },
           animate("height", 0, Number(height.toFixed(2)), spec.motion.durationMs, delay, spec.motion) +
             animate("y", baseY, Number(y.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
@@ -174,6 +177,8 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
       })
     : "";
 
+  const barColor = theme.accent ?? theme.palette[0];
+  const maxIndexValue = values.length ? values.reduce((acc, val, idx) => (val > values[acc] ? idx : acc), 0) : 0;
   const bars = points
     .map((point, index) => {
       const value = values[index] ?? 0;
@@ -192,7 +197,8 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
             width: Number(barWidth.toFixed(2)),
             height: Number(barHeight.toFixed(2)),
             rx: Number((barWidth / 2).toFixed(2)),
-            fill: theme.palette[index % theme.palette.length] ?? theme.accent
+            fill: barColor,
+            opacity: index === maxIndexValue ? 1 : 0.7
           },
           animate("height", 0, Number(barHeight.toFixed(2)), spec.motion.durationMs, delay, spec.motion) +
             animate("y", baseY, Number(y.toFixed(2)), spec.motion.durationMs, delay, spec.motion)

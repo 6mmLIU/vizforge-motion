@@ -35,7 +35,6 @@ import {
   LayoutDashboard,
   Palette,
   RefreshCw,
-  Search,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -342,7 +341,7 @@ function buildSpec(params: {
 }
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-zinc-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] ${className}`}>{children}</section>;
+  return <section className={`w-full min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] ${className}`}>{children}</section>;
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -482,38 +481,41 @@ export default function EditorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f8] text-zinc-950">
+    <main className="min-h-screen overflow-x-hidden bg-[#f7f7f8] text-zinc-950">
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-[#f7f7f8]/90 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-5">
-          <div className="flex items-center gap-3">
+        <div className="flex h-16 items-center justify-between gap-3 px-5">
+          <div className="flex min-w-0 items-center gap-3">
             <Link href="/" className="grid size-10 place-items-center rounded-full bg-zinc-100 transition hover:bg-zinc-200" aria-label="返回首页">
               <ArrowLeft className="size-4" />
             </Link>
-            <div className="flex items-center gap-3">
-              <LayoutDashboard className="size-6 text-blue-500" />
-              <div>
-                <div className="font-semibold">VizForge Motion 编辑器</div>
-                <div className="text-xs text-zinc-500">数据输入、模板套用、动态 SVG、静态图片和 API 请求。</div>
+            <div className="flex min-w-0 items-center gap-3">
+              <LayoutDashboard className="size-6 shrink-0 text-blue-500" />
+              <div className="min-w-0">
+                <div className="truncate font-semibold">VizForge Motion 编辑器</div>
+                <div className="hidden truncate text-xs text-zinc-500 sm:block">数据输入、模板套用、动态 SVG、静态图片和 API 请求。</div>
               </div>
             </div>
           </div>
-          <div className="hidden items-center gap-3 lg:flex">
-            <div className="flex h-10 w-[320px] items-center gap-3 rounded-full bg-zinc-100 px-4 text-zinc-500">
-              <Search className="size-4" />
-              <span className="text-sm">搜索图表类型、模板、导出格式</span>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="hidden h-10 items-center gap-2 rounded-full bg-blue-50 px-4 text-sm font-medium text-blue-700 lg:inline-flex">
+              <Sparkles className="size-4" />
+              {recommendation.reason}
             </div>
-            <Link href="/playground" className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
+            <Link href="/playground" className="hidden rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200 sm:inline-flex">
               API 调试台
             </Link>
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">
+            <Link href="/playground" aria-label="API 调试台" className="grid size-10 place-items-center rounded-full bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200 sm:hidden">
+              <FileJson className="size-4" />
+            </Link>
+            <div className="hidden items-center gap-2 rounded-full bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 md:inline-flex">
               <ShieldCheck className="size-4" />
-              微信兼容 {rendered.compatibility.score}/100
+              微信 {rendered.compatibility.score}/100
             </div>
           </div>
         </div>
       </header>
 
-      <div className="grid gap-5 p-5 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[390px_minmax(0,1fr)_390px]">
+      <div className="grid min-w-0 gap-4 p-4 sm:gap-5 sm:p-5 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[390px_minmax(0,1fr)_390px]">
         <Panel className="p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -523,9 +525,9 @@ export default function EditorPage() {
             <Table2 className="size-5 text-blue-500" />
           </div>
 
-          <div className="mb-3 grid grid-cols-3 gap-2 rounded-full bg-zinc-100 p-1">
+          <div className="mb-3 grid min-w-0 grid-cols-3 gap-2 overflow-hidden rounded-full bg-zinc-100 p-1">
             {(["csv", "json", "markdown"] as const).map((mode) => (
-              <button key={mode} onClick={() => setInputMode(mode)} className={`rounded-full px-3 py-2 text-sm font-semibold transition ${inputMode === mode ? "bg-white shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>
+              <button key={mode} onClick={() => setInputMode(mode)} className={`min-w-0 rounded-full px-2 py-2 text-sm font-semibold transition sm:px-3 ${inputMode === mode ? "bg-white shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>
                 {mode === "markdown" ? "表格" : mode.toUpperCase()}
               </button>
             ))}
@@ -534,7 +536,7 @@ export default function EditorPage() {
           <textarea
             value={currentInputValue()}
             onChange={(event) => updateCurrentInput(event.target.value)}
-            className="min-h-[250px] w-full resize-y rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-sm leading-6 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
+            className="min-h-[250px] w-full min-w-0 resize-y overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-sm leading-6 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
             spellCheck={false}
           />
 
@@ -562,7 +564,7 @@ export default function EditorPage() {
             <textarea
               value={cardJson}
               onChange={(event) => setCardJson(event.target.value)}
-              className="min-h-[140px] w-full resize-y rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-5 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
+              className="min-h-[140px] w-full min-w-0 resize-y overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-5 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
               spellCheck={false}
             />
           </Field>
@@ -575,9 +577,9 @@ export default function EditorPage() {
                 <h2 className="font-semibold">2. 实时预览</h2>
                 <p className="text-sm text-zinc-500">这里和导出区共用同一个 SVG 渲染结果，保证看到什么就导出什么。</p>
               </div>
-              <span className="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700">{recommendation.reason}</span>
+              <span className="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 lg:hidden">{recommendation.reason}</span>
             </div>
-            <div className="svg-card-preview rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: rendered.svg }} />
+            <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: rendered.svg }} />
           </Panel>
 
           <Panel className="p-5">
@@ -597,7 +599,7 @@ export default function EditorPage() {
                 </button>
               </div>
             </div>
-            <div className="svg-card-preview rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: rendered.svg }} />
+            <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: rendered.svg }} />
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {(["png", "webp", "jpeg"] as const).map((format) => (
                 <button key={format} onClick={() => void downloadImage(format)} className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
@@ -608,7 +610,7 @@ export default function EditorPage() {
           </Panel>
         </section>
 
-        <Panel className="p-4 xl:col-span-2 2xl:col-span-1">
+        <Panel className="p-4 lg:col-span-2 2xl:col-span-1">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="font-semibold">4. 模板与 API 配置</h2>

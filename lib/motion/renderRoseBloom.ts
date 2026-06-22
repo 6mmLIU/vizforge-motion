@@ -62,10 +62,13 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
     })
     .join("");
 
+  const labelStep = points.length <= 8 ? 1 : points.length <= 14 ? 2 : Math.ceil(points.length / 7);
+  const labelCap = dashboard ? 10 : 14;
+  const showValue = dashboard && points.length <= 8;
   const labels = points
     .map((point, index) => ({ point, index }))
-    .filter(({ index }) => points.length <= 10 || index % 2 === 0)
-    .slice(0, dashboard ? 10 : 16)
+    .filter(({ index }) => index % labelStep === 0)
+    .slice(0, labelCap)
     .map(({ point, index }) => {
       const angleMid = startOffset + index * angle + angle / 2;
       const elbow = polarToCartesian(cx, cy, maxRadius + (dashboard ? 10 : 18), angleMid);
@@ -73,9 +76,12 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
       const rightSide = pos.x >= cx;
       const labelX = pos.x + (dashboard ? (rightSide ? 16 : -16) : 0);
       const anchor = dashboard ? (rightSide ? "start" : "end") : "middle";
+      const minX = dashboard && !rightSide ? 88 : 32;
+      const maxX = dashboard && rightSide ? spec.export.width - 88 : spec.export.width - 32;
+      const clampedLabelX = Math.max(minX, Math.min(maxX, labelX));
       const leader = dashboard
         ? path({
-            d: `M ${elbow.x.toFixed(2)} ${elbow.y.toFixed(2)} L ${pos.x.toFixed(2)} ${pos.y.toFixed(2)} H ${labelX.toFixed(2)}`,
+            d: `M ${elbow.x.toFixed(2)} ${elbow.y.toFixed(2)} L ${pos.x.toFixed(2)} ${pos.y.toFixed(2)} H ${clampedLabelX.toFixed(2)}`,
             fill: "none",
             stroke: theme.palette[index % theme.palette.length],
             "stroke-width": 1.1,
@@ -86,7 +92,7 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
       return (
         leader +
         textNode(point.label.slice(0, 8), {
-          x: Number(labelX.toFixed(2)),
+          x: Number(clampedLabelX.toFixed(2)),
           y: Number((pos.y + (points.length <= 8 ? -2 : 4)).toFixed(2)),
           fill: dashboard ? theme.text : theme.muted,
           "font-size": dashboard ? 12 : 12,
@@ -94,9 +100,9 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
           "font-weight": dashboard ? 560 : undefined,
           "text-anchor": anchor
         }) +
-        (dashboard && points.length <= 8
+        (showValue
           ? textNode(formatNumber(point.value), {
-              x: Number(labelX.toFixed(2)),
+              x: Number(clampedLabelX.toFixed(2)),
               y: Number((pos.y + 15).toFixed(2)),
               fill: "#71717a",
               "font-size": 11,

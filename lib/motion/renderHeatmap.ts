@@ -166,12 +166,37 @@ function fallbackMonthLabels(weeks: number) {
 function heatColor(value: number, max: number, accent: string): string {
   if (value <= 0) return "#f1f2f4";
   const strength = Math.min(1, Math.max(0.08, value / max));
-  if (strength < 0.18) return "#dbeafe";
-  if (strength < 0.34) return "#bfdbfe";
-  if (strength < 0.52) return "#93c5fd";
-  if (strength < 0.72) return "#60a5fa";
-  if (accent.toLowerCase() !== "#0a84ff") return accent;
-  return "#0a84ff";
+  const ratio = strength < 0.18 ? 0.18 : strength < 0.34 ? 0.34 : strength < 0.52 ? 0.55 : strength < 0.72 ? 0.78 : 1;
+  return mixWithWhite(accent, ratio);
+}
+
+function mixWithWhite(hex: string, ratio: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const t = Math.max(0, Math.min(1, ratio));
+  const r = Math.round(255 + (rgb.r - 255) * t);
+  const g = Math.round(255 + (rgb.g - 255) * t);
+  const b = Math.round(255 + (rgb.b - 255) * t);
+  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const value = hex.trim().replace(/^#/, "");
+  if (value.length === 3) {
+    const r = parseInt(value[0] + value[0], 16);
+    const g = parseInt(value[1] + value[1], 16);
+    const b = parseInt(value[2] + value[2], 16);
+    if ([r, g, b].some(Number.isNaN)) return null;
+    return { r, g, b };
+  }
+  if (value.length === 6) {
+    const r = parseInt(value.slice(0, 2), 16);
+    const g = parseInt(value.slice(2, 4), 16);
+    const b = parseInt(value.slice(4, 6), 16);
+    if ([r, g, b].some(Number.isNaN)) return null;
+    return { r, g, b };
+  }
+  return null;
 }
 
 function parseDate(value: unknown): Date | null {

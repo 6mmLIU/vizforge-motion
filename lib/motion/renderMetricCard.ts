@@ -76,12 +76,15 @@ function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: Vi
   const barWidth = Math.max(points.length > 80 ? 1.5 : 3, Math.min(18, slot * 0.5));
   const baseY = plot.y + plot.height;
 
+  const sparkColor = theme.accent ?? theme.palette[0];
   const bars = points
     .map((point, index) => {
       const value = Math.max(0, point.value);
       const barHeight = Math.max(6, (value / max) * plot.height);
       const x = plot.x + index * slot + (slot - barWidth) / 2;
       const y = baseY - barHeight;
+      const strength = max > 0 ? Math.max(0, value) / max : 0;
+      const opacity = Number((0.45 + 0.5 * strength).toFixed(2));
       return rect(
         {
           x: Number(x.toFixed(2)),
@@ -89,8 +92,8 @@ function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: Vi
           width: Number(barWidth.toFixed(2)),
           height: Number(barHeight.toFixed(2)),
           rx: Number((barWidth / 2).toFixed(2)),
-          fill: theme.palette[index % theme.palette.length] ?? theme.accent,
-          opacity: 0.88
+          fill: sparkColor,
+          opacity
         },
         animate("height", 0, Number(barHeight.toFixed(2)), duration, delay + index * 36, { easing: "cinematic" }) +
           animate("y", baseY, Number(y.toFixed(2)), duration, delay + index * 36, { easing: "cinematic" })

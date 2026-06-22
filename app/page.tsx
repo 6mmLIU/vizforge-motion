@@ -5,20 +5,14 @@ import { DEFAULT_VISUAL_SPEC, type MotionPreset, type VisualStory, type VisualTy
 import {
   ArrowUpRight,
   BarChart3,
-  Bell,
   ChartNoAxesCombined,
-  CheckCircle2,
   ChevronDown,
-  Clipboard,
   Code2,
-  Download,
   FileJson,
   Github,
   Home,
   LayoutDashboard,
-  LineChart,
   Palette,
-  Search,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -60,10 +54,10 @@ const dashboardNav: Array<{ Icon: LucideIcon; label: string; active?: boolean; b
   { Icon: Settings, label: "主题色卡", tab: "色卡" }
 ];
 
-const workflow: Array<{ Icon: LucideIcon; title: string; body: string; href: string }> = [
-  { Icon: FileJson, title: "粘贴数据", body: "CSV、JSON、Markdown 表格会自动识别字段。", href: "/editor" },
-  { Icon: Sparkles, title: "套用模板", body: "生成公众号、PPT、报告和社媒图表卡片。", href: "/editor" },
-  { Icon: ShieldCheck, title: "导出发布", body: "复制动态 SVG，或下载 PNG、WebP、JPEG。", href: "/playground" }
+const workflow: Array<{ Icon: LucideIcon; title: string; body: string }> = [
+  { Icon: FileJson, title: "粘贴数据", body: "CSV、JSON、Markdown 表格会自动识别字段。" },
+  { Icon: Sparkles, title: "套用模板", body: "生成公众号、PPT、报告和社媒图表卡片。" },
+  { Icon: ShieldCheck, title: "导出发布", body: "复制动态 SVG，或下载 PNG、WebP、JPEG。" }
 ];
 
 const chartTypes = [
@@ -116,6 +110,10 @@ function Pill({ children, active = false, onClick }: { children: React.ReactNode
   );
 }
 
+function Chip({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-semibold text-zinc-600">{children}</span>;
+}
+
 function IconButton({ children, label, onClick }: { children: React.ReactNode; label: string; onClick?: () => void }) {
   return (
     <button onClick={onClick} aria-label={label} className="grid size-11 place-items-center rounded-full bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200">
@@ -126,10 +124,10 @@ function IconButton({ children, label, onClick }: { children: React.ReactNode; l
 
 function MetricCard({ label, value, delta }: { label: string; value: string; delta: string }) {
   return (
-    <button className="rounded-2xl border border-zinc-200 bg-white p-5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)]">
+    <button className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.08)]">
       <div className="text-sm text-zinc-500">{label}</div>
-      <div className="mt-5 flex items-end justify-between gap-4">
-        <div className="text-3xl font-semibold tracking-normal text-zinc-950">{value}</div>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 text-3xl font-semibold tracking-normal text-zinc-950">{value}</div>
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
           <ArrowUpRight className="size-3" />
           {delta}
@@ -142,9 +140,9 @@ function MetricCard({ label, value, delta }: { label: string; value: string; del
 function SalesBars({ accent }: { accent: string }) {
   const values = [29, 52, 34, 16, 43, 23, 25, 30, 10, 43, 37, 31];
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.05)] sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
           <h3 className="text-xl font-semibold text-zinc-950">销售表现</h3>
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
             {[
@@ -159,10 +157,10 @@ function SalesBars({ accent }: { accent: string }) {
             ))}
           </div>
         </div>
-        <Link href="/editor" className="inline-flex items-center gap-2 rounded-2xl bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
+        <span className="inline-flex items-center gap-2 rounded-2xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700">
           最近 2 周
           <ChevronDown className="size-4" />
-        </Link>
+        </span>
       </div>
       <div className="mt-8 grid h-56 grid-cols-12 items-end gap-3 border-b border-zinc-200 px-4">
         {values.map((value, index) => (
@@ -178,9 +176,9 @@ function SalesBars({ accent }: { accent: string }) {
 
 function DashboardPreview({ activeTab, setActiveTab, palette }: { activeTab: (typeof tabs)[number]; setActiveTab: (tab: (typeof tabs)[number]) => void; palette: string[] }) {
   return (
-    <div className="mx-auto max-w-[1700px] overflow-hidden rounded-[28px] border border-zinc-200 bg-zinc-50 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-      <div className="grid min-h-[720px] grid-cols-1 lg:grid-cols-[320px_1fr]">
-        <aside className="border-r border-zinc-200 bg-white p-7">
+    <div className="mx-auto w-full min-w-0 max-w-[1700px] overflow-hidden rounded-[28px] border border-zinc-200 bg-zinc-50 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+      <div className="grid min-h-[560px] grid-cols-1 lg:min-h-[720px] lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]">
+        <aside className="hidden border-r border-zinc-200 bg-white p-7 lg:block">
           <div className="mb-9 flex items-center gap-4">
             <div className="size-12 rounded-full" style={{ background: `linear-gradient(135deg, ${palette[1] ?? palette[0]}, ${palette[0]})` }} />
             <div>
@@ -196,38 +194,34 @@ function DashboardPreview({ activeTab, setActiveTab, palette }: { activeTab: (ty
             </button>
           ))}
         </aside>
-        <section className="p-8">
-          <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-5">
+        <section className="min-w-0 p-4 sm:p-6 lg:p-8">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 lg:mb-8">
+            <div className="flex items-center gap-4">
               <IconButton label="回到总览" onClick={() => setActiveTab("总览")}><Home className="size-5" /></IconButton>
               <div>
-                <h2 className="text-3xl font-semibold text-zinc-950">把原始数据变成可发布的动态图表素材</h2>
-                <p className="mt-2 text-zinc-500">面向公众号、PPT、报告、n8n 和后端自动化调用。</p>
+                <h3 className="text-xl font-semibold text-zinc-950 sm:text-2xl">工作台预览</h3>
+                <p className="mt-1 text-sm text-zinc-500">面向公众号、PPT、报告、n8n 和后端自动化调用。</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <IconButton label="搜索"><Search className="size-5" /></IconButton>
-              <IconButton label="通知"><Bell className="size-5" /></IconButton>
-              <Link href="/editor" className="rounded-full px-6 py-3 text-base font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: palette[0] }}>打开编辑器</Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip>微信安全</Chip>
+              <Chip>API Ready</Chip>
             </div>
           </div>
 
           <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-            <div className="rounded-full bg-zinc-100 p-1">
+            <div className="max-w-full overflow-x-auto rounded-full bg-zinc-100 p-1">
               {tabs.slice(0, 4).map((tab) => <Pill key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>{tab}</Pill>)}
             </div>
-            <div className="flex items-center gap-3">
-              <Link href="/playground" className="rounded-full bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200">API 调用</Link>
-              <Link href="/editor" className="rounded-full px-6 py-3 font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: palette[0] }}>生成素材</Link>
-            </div>
+            <span className="max-w-full text-sm font-medium text-zinc-500">预览区仅展示产品工作台，主要操作从顶部入口开始。</span>
           </div>
 
           <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {metrics.map((metric) => <MetricCard key={metric.label} {...metric} />)}
           </div>
-          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[1.1fr_0.9fr]">
             <SalesBars accent={palette[0]} />
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.05)] sm:p-6">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-semibold text-zinc-950">API 返回内容</h3>
@@ -242,7 +236,7 @@ function DashboardPreview({ activeTab, setActiveTab, palette }: { activeTab: (ty
   "export": { "format": "png" }
 }`}</pre>
               <div className="mt-5 grid grid-cols-3 gap-2 text-center text-sm">
-                {["SVG", "PNG", "JSON"].map((item) => <Link href="/playground" key={item} className="rounded-full bg-zinc-100 px-3 py-2 font-semibold transition hover:bg-zinc-200">{item}</Link>)}
+                {["SVG", "PNG", "JSON"].map((item) => <span key={item} className="rounded-full bg-zinc-100 px-3 py-2 font-semibold text-zinc-700">{item}</span>)}
               </div>
             </div>
           </div>
@@ -258,38 +252,42 @@ export default function HomePage() {
   const showcase = useMemo(() => miniShowcase.map((item) => ({ ...item, svg: svgFor(item.type, item.story, item.motion, palette) })), [palette]);
 
   return (
-    <main className="min-h-screen bg-[#f7f7f8] text-zinc-950">
+    <main className="min-h-screen overflow-x-hidden bg-[#f7f7f8] text-zinc-950">
       <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-[#f7f7f8]/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1840px] items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-3 text-3xl font-bold tracking-normal">
+        <div className="mx-auto flex h-16 max-w-[1840px] items-center justify-between px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-3 text-2xl font-bold tracking-normal sm:text-3xl">
             <ChartNoAxesCombined className="size-8 text-zinc-950" />
             VizForge
           </Link>
-          <nav className="hidden items-center gap-7 text-lg text-zinc-600 lg:flex">
+          <nav className="hidden items-center gap-6 text-sm font-semibold text-zinc-600 md:flex">
             {nav.map((item) => <Link key={item.label} href={item.href} className="transition hover:text-zinc-950">{item.label}</Link>)}
           </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/playground" className="hidden h-11 min-w-[300px] items-center gap-3 rounded-full bg-zinc-100 px-4 text-zinc-500 transition hover:bg-zinc-200 xl:flex">
-              <Search className="size-5" />
-              <span className="text-lg">搜索模板或打开 API 调试台</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/playground" className="hidden h-11 items-center gap-2 rounded-full bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200 lg:flex">
+              <Code2 className="size-4" />
+              API 调试台
             </Link>
+            <Link href="/playground" aria-label="API 调试台" className="grid size-11 place-items-center rounded-full bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200 lg:hidden"><Code2 className="size-5" /></Link>
             <Link href="/docs" aria-label="GitHub 与文档" className="grid size-11 place-items-center rounded-full bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200"><Github className="size-5" /></Link>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-[1840px] px-6 pb-12 pt-10">
+      <section className="mx-auto max-w-[1840px] px-4 pb-12 pt-10 sm:px-6">
         <div className="mx-auto mb-8 max-w-5xl text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
+          <div className="mb-5 inline-flex max-w-full items-center justify-center gap-2 rounded-2xl bg-blue-50 px-3 py-2 text-center text-sm font-semibold leading-5 text-blue-700 sm:rounded-full sm:px-4">
             <Wand2 className="size-4" />
-            高级数据可视化图片与动态 SVG 生成平台
+            <span>高级数据可视化图片与动态 SVG 生成平台</span>
           </div>
-          <h1 className="text-4xl font-semibold leading-tight tracking-normal text-zinc-950 md:text-5xl">
-            <span className="block">把原始数据变成高级图表图片</span>
-            <span className="block">和公众号动态 SVG。</span>
+          <h1 className="text-balance text-3xl font-semibold leading-tight tracking-normal text-zinc-950 sm:text-4xl md:text-5xl">
+            <span className="block sm:inline">把原始数据变成</span>
+            <span className="block sm:inline">高级图表图片</span>
+            <span className="block sm:inline">和公众号动态 SVG。</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-zinc-500">
-            更适合内容传播和自动化调用的 Flourish + QuickChart 替代品。输入 CSV、JSON 或表格数据，一键生成可发布、可下载、可通过 API 获取的图表素材。
+          <p className="mx-auto mt-5 max-w-3xl break-words text-base leading-7 text-zinc-500 sm:text-lg sm:leading-8">
+            <span className="sm:hidden">更适合内容传播和自动化调用。</span>
+            <span className="hidden sm:inline">更适合内容传播和自动化调用的 Flourish + QuickChart 替代品。</span>
+            输入 CSV、JSON 或表格数据，一键生成可发布、可下载、可通过 API 获取的图表素材。
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="/editor" className="rounded-full px-7 py-3 text-lg font-semibold text-white shadow-sm transition hover:opacity-90" style={{ backgroundColor: palette[0] }}>开始生成</Link>
@@ -297,7 +295,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-5 px-2">
+        <div className="mb-6 hidden items-center justify-between gap-5 px-2 lg:flex">
           <div className="rounded-full bg-zinc-100 p-1">
             {tabs.map((tab) => <Pill key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>{tab}</Pill>)}
           </div>
@@ -321,9 +319,9 @@ export default function HomePage() {
             <h2 className="text-3xl font-semibold tracking-normal">动态图表组件</h2>
             <p className="mt-2 text-lg text-zinc-500">每个组件都由同一份 VisualSpec 驱动，适合复制进公众号或通过 API 输出图片。</p>
           </div>
-          <div className="rounded-full bg-zinc-100 p-1">
-            <Pill active={activeTab === "组件"} onClick={() => setActiveTab("组件")}>动画 SVG</Pill>
-            <Pill active={activeTab === "API"} onClick={() => setActiveTab("API")}>API assets</Pill>
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip>动画 SVG</Chip>
+            <Chip>API assets</Chip>
           </div>
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
@@ -334,10 +332,7 @@ export default function HomePage() {
                   <h3 className="text-lg font-semibold">{item.title}</h3>
                   <p className="text-sm text-zinc-500">{item.note}</p>
                 </div>
-                <Link href="/editor" className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
-                  使用
-                  <ArrowUpRight className="size-4" />
-                </Link>
+                <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-normal text-zinc-600">{item.type}</span>
               </div>
               <div className="svg-card-preview rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: item.svg }} />
             </article>
@@ -355,11 +350,14 @@ export default function HomePage() {
                 <div key={title} className="rounded-xl bg-zinc-50 p-4">
                   <div className="mb-3 font-semibold">{title}</div>
                   <div className="flex flex-wrap gap-2">
-                    {items.map((item) => <Link href="/editor" key={item} className="rounded-full bg-white px-3 py-1 text-sm text-zinc-600 shadow-sm transition hover:text-zinc-950">{item}</Link>)}
+                    {items.map((item) => <span key={item} className="rounded-full bg-white px-3 py-1 text-sm text-zinc-600 shadow-sm">{item}</span>)}
                   </div>
                 </div>
               ))}
             </div>
+            <Link href="/editor" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-zinc-700 transition hover:text-zinc-950" style={{ color: palette[0] }}>
+              在编辑器里挑模板 <ArrowUpRight className="size-4" />
+            </Link>
           </div>
           <div className="rounded-2xl border border-zinc-200 bg-white p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
@@ -367,17 +365,20 @@ export default function HomePage() {
                 <h2 className="text-2xl font-semibold">从页面到 API 是同一份能力</h2>
                 <p className="text-zinc-500">设计师在编辑器里调模板，后端和 n8n 用同一份 JSON 调接口。</p>
               </div>
-              <Link href="/editor" className="rounded-full px-5 py-3 font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: palette[0] }}>打开编辑器</Link>
+              <Chip>同源 VisualSpec</Chip>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {workflow.map(({ Icon, title, body, href }) => (
-                <Link href={href} key={title} className="rounded-xl bg-zinc-50 p-5 transition hover:bg-zinc-100">
-                  <Icon className="mb-5 size-6" style={{ color: palette[0] }} />
+            <ol className="grid gap-4 md:grid-cols-3">
+              {workflow.map(({ Icon, title, body }, index) => (
+                <li key={title} className="rounded-xl bg-zinc-50 p-5">
+                  <div className="mb-5 flex items-center gap-3">
+                    <Icon className="size-6" style={{ color: palette[0] }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{`0${index + 1}`}</span>
+                  </div>
                   <div className="font-semibold">{title}</div>
                   <p className="mt-2 text-sm text-zinc-500">{body}</p>
-                </Link>
+                </li>
               ))}
-            </div>
+            </ol>
             <pre className="mt-5 overflow-x-auto rounded-xl bg-zinc-950 p-4 text-xs leading-6 text-zinc-100">{`{
   "title": "销售表现",
   "visual": { "type": "bar", "story": "magnitude" },

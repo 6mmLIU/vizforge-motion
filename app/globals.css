@@ -12,11 +12,15 @@
 
 html {
   scroll-behavior: smooth;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
   background: #f7f7f8;
   color: #09090b;
   font-family: Inter, "Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif;
@@ -27,6 +31,15 @@ textarea,
 select,
 input {
   font: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+
+main,
+section,
+pre {
+  min-width: 0;
+  max-width: 100%;
 }
 
 ::selection {
@@ -70,6 +83,8 @@ input {
 }
 
 .svg-card-preview {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
 }

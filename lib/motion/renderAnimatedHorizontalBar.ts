@@ -18,6 +18,7 @@ export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme
   const rowHeight = Math.min(42, plot.height / Math.max(points.length, 1));
   const barHeight = Math.max(points.length > 80 ? 1.5 : 3, Math.min(14, rowHeight * 0.52));
 
+  const accent = theme.accent ?? theme.palette[0];
   return points
     .map((point, index) => {
       const y = plot.y + index * rowHeight + (rowHeight - barHeight) / 2;
@@ -41,8 +42,8 @@ export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme
               width: Number(targetWidth.toFixed(2)),
               height: Number(barHeight.toFixed(2)),
               rx: theme.barRadius,
-              fill: theme.palette[index % theme.palette.length] ?? theme.accent,
-              opacity: 0.94
+              fill: accent,
+              opacity: index === 0 ? 1 : 0.7
             },
             animate("width", 0, Number(targetWidth.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
           ) +
@@ -163,7 +164,9 @@ function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, poin
       const barY = centerY - row.barHeight / 2;
       const targetWidth = Math.max(4, (Math.max(0, point.value) / max) * barWidth);
       const delay = stagger(index, spec.motion.delayMs, Math.max(32, Math.min(72, spec.motion.staggerMs)));
-      const color = theme.palette[index % theme.palette.length] ?? theme.accent;
+      const accent = theme.accent ?? theme.palette[0];
+      const color = accent;
+      const opacity = index === 0 ? 1 : 0.7;
 
       return group(
         textNode(fitText(point.label, labelWidth, row.labelSize), {
@@ -189,7 +192,8 @@ function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, poin
               width: Number(targetWidth.toFixed(2)),
               height: Number(row.barHeight.toFixed(2)),
               rx: Number((row.barHeight / 2).toFixed(2)),
-              fill: color
+              fill: color,
+              opacity
             },
             animate("width", 0, Number(targetWidth.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
           ) +
