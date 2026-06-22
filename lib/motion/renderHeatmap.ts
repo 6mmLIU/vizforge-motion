@@ -27,17 +27,17 @@ export function renderHeatmap(spec: VisualSpec, theme: VisualTheme): string {
   const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
   const plot = {
     x: 42,
-    y: compact ? 82 : tall ? 188 : 132,
+    y: compact ? 82 : tall ? 224 : 132,
     width: spec.export.width - 84,
-    height: spec.export.height - (compact ? 126 : tall ? 318 : 218)
+    height: spec.export.height - (compact ? 126 : tall ? 386 : 218)
   };
-  const gap = weeks > 56 ? 2 : weeks > 38 ? 3 : 5;
-  const cellSize = Math.max(4, Math.min(tall ? 16 : 12, (plot.width - Math.max(0, weeks - 1) * gap) / weeks));
+  const gap = weeks > 56 ? 2 : weeks > 38 ? 3 : tall ? 6 : 5;
+  const cellSize = Math.max(4, Math.min(tall ? 24 : 12, (plot.width - Math.max(0, weeks - 1) * gap) / weeks));
   const gridWidth = weeks * cellSize + Math.max(0, weeks - 1) * gap;
   const gridHeight = 7 * cellSize + 6 * gap;
   const startX = plot.x + Math.max(0, (plot.width - gridWidth) / 2);
   const startY = tall
-    ? plot.y + Math.max(88, Math.min(124, (plot.height - gridHeight) * 0.26))
+    ? plot.y + Math.max(112, Math.min(178, (plot.height - gridHeight) * 0.24))
     : plot.y + Math.max(0, Math.min(28, (plot.height - gridHeight - 34) / 2));
 
   const calendar = cells

@@ -21,9 +21,9 @@ export function renderAreaTrend(spec: VisualSpec, theme: VisualTheme): string {
   const maxValue = maxAbs(allPoints);
   const plot = {
     x: 62,
-    y: tall ? 214 : spec.card?.periodLabel ? 148 : 132,
+    y: tall ? 224 : spec.card?.periodLabel ? 148 : 132,
     width: width - 124,
-    height: Math.max(150, height - (tall ? 344 : spec.card?.periodLabel ? 240 : 220))
+    height: Math.max(150, height - (tall ? 354 : spec.card?.periodLabel ? 240 : 220))
   };
   const baseY = plot.y + plot.height;
   const periodLabel = spec.card?.periodLabel?.slice(0, 24);
@@ -246,17 +246,17 @@ function renderLegend(series: AreaSeries[], width: number, y: number): string {
 }
 
 function renderPeriodPill(width: number, label: string): string {
-  const pillWidth = Math.min(216, Math.max(112, label.length * 12 + 54));
-  const x = width - pillWidth - 40;
+  const pillWidth = Math.min(186, Math.max(98, label.length * 10 + 48));
+  const x = width - pillWidth - 44;
   return (
-    rect({ x, y: 40, width: pillWidth, height: 48, rx: 20, fill: "#eef2f7" }) +
+    rect({ x, y: 114, width: pillWidth, height: 36, rx: 18, fill: "#eef2f7" }) +
     textNode(label, {
       x: x + pillWidth / 2,
-      y: 71,
-      fill: "#182033",
-      "font-size": 18,
+      y: 138,
+      fill: "#2f3747",
+      "font-size": 13,
       "font-family": DASHBOARD_FONT,
-      "font-weight": 650,
+      "font-weight": 560,
       "text-anchor": "middle"
     })
   );

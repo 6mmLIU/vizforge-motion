@@ -69,7 +69,7 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
   const tall = height / width > 1.15;
   const ranked = orderedPoints(points, true).slice(0, 8);
   const max = maxAbs(ranked);
-  const plot = { x: 48, y: tall ? 204 : 118, width: width - 96, height: height - (tall ? 310 : 180) };
+  const plot = { x: 48, y: tall ? 222 : 118, width: width - 96, height: height - (tall ? 328 : 180) };
   const row = horizontalRowLayout(plot.height, ranked.length, tall);
   const rankWidth = 38;
   const labelWidth = Math.min(140, Math.max(82, longestLabelWidth(ranked, row.labelSize) + 8));
@@ -79,7 +79,7 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
   return (
     textNode("当前排名", {
       x: plot.x,
-      y: tall ? 188 : 104,
+      y: tall ? 202 : 104,
       fill: "#697386",
       "font-size": tall ? 14 : 13,
       "font-family": FONT,
@@ -148,9 +148,9 @@ function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, poin
   const max = maxAbs(points);
   const plot = {
     x: 48,
-    y: tall ? 204 : 124,
+    y: tall ? 222 : 124,
     width: width - 96,
-    height: height - (tall ? 310 : 186)
+    height: height - (tall ? 328 : 186)
   };
   const row = horizontalRowLayout(plot.height, points.length, tall);
   const labelWidth = Math.min(156, Math.max(86, longestLabelWidth(points, row.labelSize) + 8));
@@ -219,8 +219,8 @@ function orderedPoints(points: Point[], ranking: boolean): Point[] {
 
 function horizontalRowLayout(plotHeight: number, count: number, tall = false) {
   const safeCount = Math.max(1, count);
-  const step = Math.min(tall ? 58 : 46, Math.max(15, plotHeight / safeCount));
-  const barHeight = Math.max(safeCount > 80 ? 2 : 5, Math.min(tall ? 20 : 16, step * (tall ? 0.42 : 0.38)));
+  const step = Math.min(tall ? 70 : 46, Math.max(15, plotHeight / safeCount));
+  const barHeight = Math.max(safeCount > 80 ? 2 : 5, Math.min(tall ? 22 : 16, step * (tall ? 0.38 : 0.38)));
   const labelSize = Math.max(9, Math.min(tall ? 17 : 15, safeCount > 28 ? 10 : safeCount > 14 ? 12 : tall ? 16 : 14));
   const valueSize = Math.max(9, Math.min(tall ? 15 : 14, labelSize));
   return { step, barHeight, labelSize, valueSize };

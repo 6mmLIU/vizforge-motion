@@ -85,7 +85,7 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
   const tickMax = maxValue <= 60 ? 60 : Math.ceil((maxValue * 1.12) / 4) * 4;
   const metrics = (spec.card?.metrics ?? []).slice(0, 4);
   const hasMetrics = metrics.length > 0;
-  const plotTop = hasMetrics ? (tall ? 344 : Math.min(208, Math.max(184, height * 0.41))) : tall ? 204 : 122;
+  const plotTop = hasMetrics ? (tall ? 354 : Math.min(216, Math.max(190, height * 0.42))) : tall ? 210 : 122;
   const plotBottom = height - (tall ? 122 : 84);
   const plot = {
     x: tall ? 84 : 88,
@@ -121,17 +121,17 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
     })
     .join("");
 
-  const kpis = hasMetrics ? renderKpiStrip(metrics, width, tall ? 188 : 108, tall) : "";
+  const kpis = hasMetrics ? renderKpiStrip(metrics, width, tall ? 196 : 112, tall) : "";
 
   const periodLabel = spec.card?.periodLabel?.slice(0, 24);
   const pillWidth = Math.min(186, Math.max(98, (periodLabel?.length ?? 0) * 10 + 48));
   const filterPill = periodLabel
-    ? rect({ x: width - pillWidth - 44, y: tall ? 54 : 38, width: pillWidth, height: 38, rx: 19, fill: "#eef2f7" }) +
+    ? rect({ x: width - pillWidth - 44, y: tall ? 114 : 38, width: pillWidth, height: 36, rx: 18, fill: "#eef2f7" }) +
       textNode(periodLabel, {
         x: width - pillWidth / 2 - 44,
-        y: tall ? 79 : 63,
+        y: tall ? 138 : 63,
         fill: "#2f3747",
-        "font-size": 14,
+        "font-size": tall ? 13 : 14,
         "font-family": DASHBOARD_FONT,
         "font-weight": 560,
         "text-anchor": "middle"
@@ -170,8 +170,8 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
           ? textNode(formatTick(value), {
               x: Number((x + barWidth / 2).toFixed(2)),
               y: Number((y - 9).toFixed(2)),
-              fill: index === maxIndex ? "#f06a3f" : "#8a93a4",
-              "font-size": 11,
+              fill: index === maxIndex ? "#f06a3f" : "#74809a",
+              "font-size": 12,
               "font-family": DASHBOARD_FONT,
               "font-weight": 520,
               "text-anchor": "middle"
@@ -454,15 +454,17 @@ function renderKpiStrip(metrics: CardMetric[], width: number, top: number, tall:
   const left = tall ? 48 : 40;
   const gap = tall ? 12 : 10;
   const available = width - left * 2 - gap * (metrics.length - 1);
-  const itemWidth = available / Math.max(1, metrics.length);
-  const itemHeight = tall ? 88 : 72;
+  const primaryWidth = tall && metrics.length > 1 ? Math.min(266, Math.max(224, available * 0.42)) : available / Math.max(1, metrics.length);
+  const secondaryWidth = metrics.length > 1 ? (available - primaryWidth) / (metrics.length - 1) : primaryWidth;
+  const itemHeight = tall ? 96 : 76;
 
   return metrics
     .map((metric, index) => {
-      const x = left + index * (itemWidth + gap);
+      const itemWidth = index === 0 ? primaryWidth : secondaryWidth;
+      const x = index === 0 ? left : left + primaryWidth + gap + (index - 1) * (secondaryWidth + gap);
       const value = formatMetricValue(metric.value, metric.prefix, metric.suffix);
       const trend = metricTrend(metric);
-      const valueSize = tall ? (metrics.length > 3 ? 22 : 25) : metrics.length > 3 ? 20 : 23;
+      const valueSize = tall ? (index === 0 ? 30 : metrics.length > 3 ? 21 : 24) : index === 0 ? 24 : metrics.length > 3 ? 20 : 22;
 
       return (
         rect({
@@ -471,30 +473,41 @@ function renderKpiStrip(metrics: CardMetric[], width: number, top: number, tall:
           width: Number(itemWidth.toFixed(2)),
           height: itemHeight,
           rx: 18,
-          fill: index === 0 ? "#f6f8fb" : "#fbfcfe",
-          stroke: "#edf1f6",
+          fill: index === 0 ? "#f4f8ff" : "#fbfcfe",
+          stroke: index === 0 ? "#dce8ff" : "#edf1f6",
           "stroke-width": 0.8
         }) +
+        (index === 0
+          ? rect({
+              x: x + 14,
+              y: top + 18,
+              width: 4,
+              height: itemHeight - 36,
+              rx: 2,
+              fill: "#2f63d8",
+              opacity: 0.82
+            })
+          : "") +
         textNode(metric.label, {
-          x: x + 16,
-          y: top + 24,
+          x: x + (index === 0 ? 28 : 16),
+          y: top + (tall ? 27 : 25),
           fill: "#7b8496",
           "font-size": tall ? 12 : 11,
           "font-family": DASHBOARD_FONT,
-          "font-weight": 460
+          "font-weight": 500
         }) +
         textNode(value, {
-          x: x + 16,
-          y: top + (tall ? 58 : 52),
+          x: x + (index === 0 ? 28 : 16),
+          y: top + (tall ? 66 : 55),
           fill: "#182033",
           "font-size": valueSize,
           "font-family": DASHBOARD_FONT,
-          "font-weight": 620
+          "font-weight": index === 0 ? 720 : 640
         }) +
         (trend
           ? textNode(trend.text, {
               x: Number((x + itemWidth - 18).toFixed(2)),
-              y: top + (tall ? 57 : 51),
+              y: top + (tall ? 65 : 54),
               fill: trend.fill,
               "font-size": tall ? 11 : 10,
               "font-family": DASHBOARD_FONT,
@@ -513,7 +526,7 @@ function barFill(theme: VisualTheme, index: number, count: number, maxIndex: num
   }
   if (index === maxIndex) return { color: theme.palette[2] ?? "#f06a3f", opacity: 1 };
   if (index === lastIndex) return { color: theme.palette[1] ?? "#16a394", opacity: 0.98 };
-  return { color: theme.palette[0] ?? theme.accent, opacity: 0.46 };
+  return { color: theme.palette[0] ?? theme.accent, opacity: 0.62 };
 }
 
 function stackShares(index: number): [number, number, number] {

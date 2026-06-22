@@ -1,5 +1,5 @@
 import { coerceNumber } from "@/lib/data/inferSchema";
-import { animate, animateTransform, circle, group, textNode } from "@/lib/motion/svgPrimitives";
+import { animate, animateTransform, circle, group, line, textNode } from "@/lib/motion/svgPrimitives";
 import { gridLines, resolveFields } from "@/lib/motion/renderUtils";
 import { stagger } from "@/lib/motion/timeline";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
@@ -26,10 +26,10 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
 
   const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
   const plot = {
-    x: 76,
-    y: tall ? 188 : 132,
-    width: spec.export.width - 152,
-    height: spec.export.height - (tall ? 318 : 232)
+    x: tall ? 68 : 76,
+    y: tall ? 224 : 132,
+    width: spec.export.width - (tall ? 136 : 152),
+    height: spec.export.height - (tall ? 384 : 232)
   };
   const xValues = points.map((point) => point.x);
   const yValues = points.map((point) => point.y);
@@ -44,9 +44,9 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
     .map((point, index) => {
       const x = scale(point.x, minX, maxX, plot.x, plot.width);
       const y = plot.y + plot.height - scale(point.y, minY, maxY, 0, plot.height);
-      const radius = spec.type === "bubble" ? 5 + (Math.abs(point.size) / maxSize) * (tall ? 24 : 20) : tall ? 8 : 6;
+      const radius = spec.type === "bubble" ? 8 + (Math.abs(point.size) / maxSize) * (tall ? 34 : 22) : tall ? 11 : 7;
       const delay = stagger(index, spec.motion.delayMs, Math.max(18, spec.motion.staggerMs * 0.3));
-      const labelAbsoluteX = clamp(x + radius + 8, plot.x + 8, plot.x + plot.width - 8);
+      const labelAbsoluteX = clamp(x + radius + 10, plot.x + 10, plot.x + plot.width - 10);
       const labelX = labelAbsoluteX - x;
       const labelAnchor = labelX <= 0 ? "end" : "start";
       return group(
@@ -63,11 +63,11 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
             (points.length <= 12
               ? textNode(point.label.slice(0, 10), {
                   x: Number(labelX.toFixed(2)),
-                  y: Number((radius > 14 ? radius + 4 : -radius - 6).toFixed(2)),
+                  y: Number((radius > 16 ? radius + 8 : -radius - 8).toFixed(2)),
                   fill: theme.text,
-                  "font-size": tall ? 12 : 11,
+                  "font-size": tall ? 14 : 11,
                   "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
-                  "font-weight": 650,
+                  "font-weight": 680,
                   "text-anchor": labelAnchor
                 })
               : "") +
@@ -84,7 +84,29 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
     textNode(String(maxX), { x: plot.x + plot.width, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" }) +
     textNode(String(maxY), { x: plot.x - 10, y: plot.y + 4, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" });
 
-  return gridLines(plot, theme) + circles + axes;
+  const axisColor = theme.id === "editorial-light" ? "#dbe3ee" : theme.text;
+  const axisOpacity = theme.id === "editorial-light" ? 1 : theme.axisOpacity;
+  const axesFrame =
+    line({
+      x1: plot.x,
+      x2: plot.x + plot.width,
+      y1: plot.y + plot.height,
+      y2: plot.y + plot.height,
+      stroke: axisColor,
+      "stroke-width": theme.id === "editorial-light" ? 1.3 : 1,
+      opacity: axisOpacity
+    }) +
+    line({
+      x1: plot.x,
+      x2: plot.x,
+      y1: plot.y,
+      y2: plot.y + plot.height,
+      stroke: axisColor,
+      "stroke-width": theme.id === "editorial-light" ? 1.3 : 1,
+      opacity: axisOpacity
+    });
+
+  return gridLines(plot, theme) + axesFrame + circles + axes;
 }
 
 function clamp(value: number, min: number, max: number) {

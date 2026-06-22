@@ -296,12 +296,12 @@ function renderHorizontalWrapLegend(spec: VisualSpec, theme: VisualTheme, points
 
 function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>): string {
   const cx = spec.export.width * 0.38;
-  const cy = spec.export.height * 0.67;
+  const cy = spec.export.height * 0.52;
   const max = maxAbs(points);
   const topPoints = points.slice(0, 6);
   const bands = topPoints
     .map((point, index) => {
-      const radius = 112 - index * 13;
+      const radius = 146 - index * 15;
       const part = Math.max(0.04, Math.min(1, Math.max(0, point.value) / max));
       const end = -118 + 236 * part;
       const delay = stagger(index, spec.motion.delayMs, Math.max(36, spec.motion.staggerMs));
@@ -330,7 +330,7 @@ function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType
 
   const labels = topPoints
     .map((point, index) => {
-      const y = 178 + index * 38;
+      const y = 214 + index * 42;
       const color = theme.palette[index % theme.palette.length];
       return group(
         circle({ cx: spec.export.width * 0.62, cy: y - 5, r: 5.5, fill: color }) +
@@ -358,9 +358,9 @@ function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType
 }
 
 function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): string {
-  const cx = spec.export.width * 0.42;
-  const cy = spec.export.height * 0.67;
-  const radius = Math.min(spec.export.width, spec.export.height) * 0.25;
+  const cx = spec.export.width / 2;
+  const cy = spec.export.height * 0.55;
+  const radius = Math.min(spec.export.width, spec.export.height) * 0.29;
   const target = Math.max(100, Math.ceil(total / 100) * 100);
   const percent = Math.min(0.98, total / target);
   const end = -120 + 240 * percent;
@@ -402,7 +402,7 @@ function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): strin
         "text-anchor": "middle"
       }) +
       textNode("完成进度", {
-        x: spec.export.width * 0.66,
+        x: 72,
         y: 212,
         fill: theme.text,
         "font-size": 18,
@@ -410,7 +410,7 @@ function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): strin
         "font-weight": 680
       }) +
       textNode("按当前数据合计自动换算目标区间", {
-        x: spec.export.width * 0.66,
+        x: 72,
         y: 242,
         fill: "#7b8496",
         "font-size": 14,
