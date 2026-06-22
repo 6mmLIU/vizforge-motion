@@ -477,19 +477,8 @@ function renderKpiStrip(metrics: CardMetric[], width: number, top: number, tall:
           stroke: index === 0 ? "#dce8ff" : "#edf1f6",
           "stroke-width": 0.8
         }) +
-        (index === 0
-          ? rect({
-              x: x + 14,
-              y: top + 18,
-              width: 4,
-              height: itemHeight - 36,
-              rx: 2,
-              fill: "#2f63d8",
-              opacity: 0.82
-            })
-          : "") +
         textNode(metric.label, {
-          x: x + (index === 0 ? 28 : 16),
+          x: x + (index === 0 ? 18 : 16),
           y: top + (tall ? 27 : 25),
           fill: "#7b8496",
           "font-size": tall ? 12 : 11,
@@ -497,7 +486,7 @@ function renderKpiStrip(metrics: CardMetric[], width: number, top: number, tall:
           "font-weight": 500
         }) +
         textNode(value, {
-          x: x + (index === 0 ? 28 : 16),
+          x: x + (index === 0 ? 18 : 16),
           y: top + (tall ? 66 : 55),
           fill: "#182033",
           "font-size": valueSize,

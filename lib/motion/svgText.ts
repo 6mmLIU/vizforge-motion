@@ -1,4 +1,4 @@
-import { rect, textNode } from "@/lib/motion/svgPrimitives";
+import { textNode } from "@/lib/motion/svgPrimitives";
 import type { VisualTheme } from "@/lib/visual/themes";
 
 const SVG_FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
@@ -8,33 +8,10 @@ export function cardTitle(title: string, subtitle: string | undefined, theme: Vi
     const tall = height / width > 1.15;
     const x = tall ? 56 : 40;
     const initialTitleSize = tall ? 40 : theme.typography.title;
-    const titleLines = wrapText(title, width - x * 2 - (tall ? 120 : 180), initialTitleSize, tall ? 2 : 1);
+    const titleLines = wrapText(title, width - x * 2, initialTitleSize, tall ? 2 : 1);
     const titleSize = tall && titleLines.length > 1 ? 34 : initialTitleSize;
-    const y = tall ? (titleLines.length > 1 ? 100 : 104) : 62;
+    const y = tall ? (titleLines.length > 1 ? 72 : 78) : 54;
     const lineGap = titleSize * (tall ? 1.12 : 1.16);
-    const eyebrowLabel = "数据快照";
-    const eyebrowWidth = tall ? 88 : 72;
-    const eyebrowHeight = tall ? 26 : 20;
-    const eyebrowTop = tall ? 36 : 22;
-    const eyebrow =
-      rect({
-        x,
-        y: eyebrowTop,
-        width: eyebrowWidth,
-        height: eyebrowHeight,
-        rx: eyebrowHeight / 2,
-        fill: "#eaf1ff"
-      }) +
-      textNode(eyebrowLabel, {
-        x: x + eyebrowWidth / 2,
-        y: tall ? 54 : 36,
-        fill: theme.accent,
-        opacity: 0.92,
-        "font-size": tall ? 12 : 10,
-        "font-family": SVG_FONT,
-        "font-weight": 720,
-        "text-anchor": "middle"
-      });
     const titleNode = titleLines
       .map((line, index) =>
         textNode(line, {
@@ -47,7 +24,7 @@ export function cardTitle(title: string, subtitle: string | undefined, theme: Vi
         })
       )
       .join("");
-    const subtitleY = y + Math.max(1, titleLines.length) * titleSize * 1.04 + (tall ? 16 : 8);
+    const subtitleY = y + Math.max(1, titleLines.length) * titleSize * 1.04 + (tall ? 14 : 8);
     const subtitleNode = subtitle && !(tall && titleLines.length > 1)
       ? textNode(subtitle, {
           x,
@@ -58,18 +35,8 @@ export function cardTitle(title: string, subtitle: string | undefined, theme: Vi
           "font-weight": 420
         })
       : "";
-    const accentRule = !tall
-      ? rect({
-          x,
-          y: 44,
-          width: 34,
-          height: 3,
-          rx: 2,
-          fill: theme.accent
-        })
-      : "";
 
-    return eyebrow + accentRule + titleNode + subtitleNode;
+    return titleNode + subtitleNode;
   }
 
   const titleNode = textNode(title, {

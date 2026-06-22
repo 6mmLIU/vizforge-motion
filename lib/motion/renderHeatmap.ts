@@ -31,13 +31,13 @@ export function renderHeatmap(spec: VisualSpec, theme: VisualTheme): string {
     width: spec.export.width - 84,
     height: spec.export.height - (compact ? 126 : tall ? 386 : 218)
   };
-  const gap = weeks > 56 ? 2 : weeks > 38 ? 3 : tall ? 6 : 5;
-  const cellSize = Math.max(4, Math.min(tall ? 24 : 12, (plot.width - Math.max(0, weeks - 1) * gap) / weeks));
+  const gap = weeks > 56 ? 2 : weeks > 38 ? 3 : tall ? 7 : 5;
+  const cellSize = Math.max(4, Math.min(tall ? 30 : 12, (plot.width - Math.max(0, weeks - 1) * gap) / weeks));
   const gridWidth = weeks * cellSize + Math.max(0, weeks - 1) * gap;
   const gridHeight = 7 * cellSize + 6 * gap;
   const startX = plot.x + Math.max(0, (plot.width - gridWidth) / 2);
   const startY = tall
-    ? plot.y + Math.max(112, Math.min(178, (plot.height - gridHeight) * 0.24))
+    ? plot.y + Math.max(148, Math.min(222, (plot.height - gridHeight) * 0.25))
     : plot.y + Math.max(0, Math.min(28, (plot.height - gridHeight - 34) / 2));
 
   const calendar = cells
@@ -60,7 +60,7 @@ export function renderHeatmap(spec: VisualSpec, theme: VisualTheme): string {
     })
     .join("");
 
-  return group(renderTabs(spec.export.width, theme, tall ? startY - 48 : 62) + calendar + renderMonthLabels(cells, startX, startY + gridHeight + 28, cellSize + gap, theme));
+  return group(renderTabs(spec.export.width, theme, tall ? startY - 72 : 62) + calendar + renderMonthLabels(cells, startX, startY + gridHeight + (tall ? 38 : 28), cellSize + gap, theme));
 }
 
 function calendarCellsFromDates(points: Point[], categoryField: string): CalendarCell[] | null {
@@ -114,15 +114,15 @@ function renderTabs(width: number, theme: VisualTheme, y: number): string {
     { text: "每周", active: false },
     { text: "累计", active: false }
   ];
-  const startX = width - 170;
+  const startX = width - (y > 100 ? 214 : 170);
 
   return labels
     .map((label, index) =>
       textNode(label.text, {
-        x: startX + index * 42,
+        x: startX + index * (y > 100 ? 54 : 42),
         y,
         fill: label.active ? theme.text : theme.muted,
-        "font-size": 15,
+        "font-size": y > 100 ? 16 : 15,
         "font-family": FONT,
         "font-weight": label.active ? 660 : 520
       })
@@ -150,9 +150,9 @@ function renderMonthLabels(cells: CalendarCell[], startX: number, y: number, col
         x: Number((startX + col * columnStep).toFixed(2)),
         y: Number(y.toFixed(2)),
         fill: theme.muted,
-        "font-size": 14,
+        "font-size": 15,
         "font-family": FONT,
-        "font-weight": 520
+        "font-weight": 560
       })
     )
     .join("");

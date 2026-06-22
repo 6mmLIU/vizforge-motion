@@ -20,9 +20,9 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
   if (dashboard && spec.type === "gauge") return renderGauge(spec, theme, total);
 
   const cx = dashboard ? (tall ? spec.export.width / 2 : spec.export.width * 0.38) : spec.export.width / 2;
-  const cy = dashboard ? (tall ? spec.export.height * 0.48 : spec.export.height * 0.57) : spec.export.height / 2 + 22;
-  const radius = Math.min(spec.export.width, spec.export.height) * (dashboard ? (tall ? 0.24 : 0.2) : 0.25);
-  const strokeWidth = Math.max(dashboard ? 20 : 22, radius * (tall ? 0.19 : 0.22));
+  const cy = dashboard ? (tall ? spec.export.height * 0.45 : spec.export.height * 0.57) : spec.export.height / 2 + 22;
+  const radius = Math.min(spec.export.width, spec.export.height) * (dashboard ? (tall ? 0.26 : 0.2) : 0.25);
+  const strokeWidth = Math.max(dashboard ? 22 : 22, radius * (tall ? 0.18 : 0.22));
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
 
@@ -71,7 +71,7 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
 
   const legend = dashboard
     ? tall
-      ? renderDashboardLegendGrid(spec, theme, points, total, spec.export.height * 0.7)
+      ? renderDashboardLegendGrid(spec, theme, points, total, spec.export.height * 0.68)
       : renderDashboardVerticalLegend(spec, theme, points, total, 176)
     : renderHorizontalWrapLegend(spec, theme, points);
 
@@ -102,8 +102,8 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
 function renderPieChart(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>, total: number): string {
   const tall = spec.export.height / spec.export.width > 1.15;
   const cx = tall ? spec.export.width / 2 : spec.export.width * 0.38;
-  const cy = tall ? spec.export.height * 0.48 : spec.export.height * 0.57;
-  const radius = Math.min(spec.export.width, spec.export.height) * (tall ? 0.25 : 0.23);
+  const cy = tall ? spec.export.height * 0.44 : spec.export.height * 0.57;
+  const radius = Math.min(spec.export.width, spec.export.height) * (tall ? 0.28 : 0.23);
   let angle = -90;
 
   const slices = points
@@ -126,7 +126,7 @@ function renderPieChart(spec: VisualSpec, theme: VisualTheme, points: ReturnType
     })
     .join("");
 
-  return group(slices + (tall ? renderDashboardLegendGrid(spec, theme, points, total, spec.export.height * 0.7) : renderPartLegend(spec, theme, points, total)));
+  return group(slices + (tall ? renderDashboardLegendGrid(spec, theme, points, total, spec.export.height * 0.68) : renderPartLegend(spec, theme, points, total)));
 }
 
 function renderDashboardVerticalLegend(
@@ -201,10 +201,10 @@ function renderDashboardLegendGrid(
   startY: number
 ): string {
   const visible = points.slice(0, 8);
-  const left = 72;
-  const colWidth = 248;
-  const colGap = Math.max(36, spec.export.width - left * 2 - colWidth * 2);
-  const rowGap = 40;
+  const left = 86;
+  const colGap = 48;
+  const colWidth = (spec.export.width - left * 2 - colGap) / 2;
+  const rowGap = 48;
   const rows = visible
     .map((point, index) => {
       const color = theme.palette[index % theme.palette.length];
@@ -215,21 +215,22 @@ function renderDashboardLegendGrid(
       const positiveValue = Math.max(0, point.value);
       const percent = `${((positiveValue / total) * 100).toFixed(positiveValue === total ? 0 : 1)}%`;
       return group(
-        circle({ cx: x, cy: y - 5, r: 5, fill: color }) +
+        circle({ cx: x, cy: y - 5, r: 6, fill: color }) +
           textNode(point.label.slice(0, 8), {
-            x: x + 14,
+            x: x + 16,
             y,
             fill: "#2f3747",
-            "font-size": 13,
+            "font-size": 15,
             "font-family": DASHBOARD_FONT,
-            "font-weight": 520
+            "font-weight": 620
           }) +
           textNode(percent, {
             x: x + colWidth - 8,
             y,
             fill: "#7b8496",
-            "font-size": 12,
+            "font-size": 14,
             "font-family": DASHBOARD_FONT,
+            "font-weight": 560,
             "text-anchor": "end"
           })
       );
@@ -295,30 +296,32 @@ function renderHorizontalWrapLegend(spec: VisualSpec, theme: VisualTheme, points
 }
 
 function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>): string {
-  const cx = spec.export.width * 0.38;
-  const cy = spec.export.height * 0.52;
+  const cx = spec.export.width / 2;
+  const cy = spec.export.height * 0.46;
   const max = maxAbs(points);
   const topPoints = points.slice(0, 6);
+  const total = totalPositive(topPoints);
+  const leader = topPoints[0];
   const bands = topPoints
     .map((point, index) => {
-      const radius = 146 - index * 15;
+      const radius = 252 - index * 25;
       const part = Math.max(0.04, Math.min(1, Math.max(0, point.value) / max));
-      const end = -118 + 236 * part;
+      const end = -116 + 232 * part;
       const delay = stagger(index, spec.motion.delayMs, Math.max(36, spec.motion.staggerMs));
       return (
         path({
-          d: describeArc(cx, cy, radius, -118, 118),
+          d: describeArc(cx, cy, radius, -116, 116),
           fill: "none",
           stroke: "#eef2f7",
-          "stroke-width": 9,
+          "stroke-width": 16,
           "stroke-linecap": "round"
         }) +
         path(
           {
-            d: describeArc(cx, cy, radius, -118, end),
+            d: describeArc(cx, cy, radius, -116, end),
             fill: "none",
             stroke: theme.palette[index % theme.palette.length],
-            "stroke-width": 9,
+            "stroke-width": 16,
             "stroke-linecap": "round",
             opacity: 1
           },
@@ -330,31 +333,68 @@ function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType
 
   const labels = topPoints
     .map((point, index) => {
-      const y = 214 + index * 42;
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const left = 70;
+      const colGap = 42;
+      const colWidth = (spec.export.width - left * 2 - colGap) / 2;
+      const x = left + col * (colWidth + colGap);
+      const y = 744 + row * 52;
       const color = theme.palette[index % theme.palette.length];
+      const percent = `${((Math.max(0, point.value) / total) * 100).toFixed(1)}%`;
       return group(
-        circle({ cx: spec.export.width * 0.62, cy: y - 5, r: 5.5, fill: color }) +
+        circle({ cx: x, cy: y - 6, r: 6.5, fill: color }) +
           textNode(point.label.slice(0, 9), {
-            x: spec.export.width * 0.62 + 12,
+            x: x + 18,
             y,
             fill: theme.text,
-            "font-size": 14,
+            "font-size": 15,
             "font-family": DASHBOARD_FONT,
-            "font-weight": 580
+            "font-weight": 640
           }) +
           textNode(formatNumber(point.value), {
-            x: spec.export.width - 54,
+            x: x + colWidth - 74,
             y,
             fill: "#697386",
+            "font-size": 14,
+            "font-family": DASHBOARD_FONT,
+            "text-anchor": "end"
+          }) +
+          textNode(percent, {
+            x: x + colWidth - 6,
+            y,
+            fill: "#7b8496",
             "font-size": 13,
             "font-family": DASHBOARD_FONT,
+            "font-weight": 560,
             "text-anchor": "end"
           })
       );
     })
     .join("");
 
-  return group(bands + labels);
+  const leaderSummary = leader
+    ? textNode(leader.label.slice(0, 10), {
+        x: cx,
+        y: cy - 10,
+        fill: "#7b8496",
+        "font-size": 14,
+        "font-family": DASHBOARD_FONT,
+        "font-weight": 560,
+        "text-anchor": "middle"
+      }) +
+      textNode(formatNumber(leader.value), {
+        x: cx,
+        y: cy + 34,
+        fill: theme.text,
+        "font-size": 42,
+        "font-family": DASHBOARD_FONT,
+        "font-weight": 780,
+        "text-anchor": "middle"
+      })
+    : "";
+
+  return group(bands + leaderSummary + labels);
 }
 
 function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): string {
