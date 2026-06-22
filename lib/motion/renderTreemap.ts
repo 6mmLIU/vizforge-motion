@@ -33,7 +33,7 @@ export function renderTreemap(spec: VisualSpec, theme: VisualTheme): string {
           {
             x,
             y,
-            width: 0,
+            width: Number(width.toFixed(2)),
             height: Number(height.toFixed(2)),
             rx: 12,
             fill: theme.palette[index % theme.palette.length],

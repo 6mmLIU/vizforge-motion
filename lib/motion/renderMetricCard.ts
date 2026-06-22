@@ -50,7 +50,7 @@ export function renderMetricCard(spec: VisualSpec, theme: VisualTheme): string {
           x: 62,
           y: 198,
           fill: theme.text,
-          opacity: 0,
+          opacity: 1,
           "font-size": 46,
           "font-weight": 760,
           "font-family": DASHBOARD_FONT
@@ -85,9 +85,9 @@ function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: Vi
       return rect(
         {
           x: Number(x.toFixed(2)),
-          y: baseY,
+          y: Number(y.toFixed(2)),
           width: Number(barWidth.toFixed(2)),
-          height: 0,
+          height: Number(barHeight.toFixed(2)),
           rx: Number((barWidth / 2).toFixed(2)),
           fill: theme.palette[index % theme.palette.length] ?? theme.accent,
           opacity: 0.88

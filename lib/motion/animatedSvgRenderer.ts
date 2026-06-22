@@ -106,8 +106,9 @@ function bodyForSpec(spec: VisualSpec): { body: string; warnings: string[] } {
     case "grouped-bar":
     case "stacked-bar":
     case "waterfall":
+      return { body: renderAnimatedBar(spec, theme), warnings: [] };
     case "ranking":
-      return { body: renderAnimatedBar(spec, theme), warnings: spec.type === "bar" ? [] : [`${spec.type} currently uses animated bar preview.`] };
+      return { body: renderAnimatedHorizontalBar(spec, theme), warnings: [] };
     case "horizontal-bar":
       return { body: renderAnimatedHorizontalBar(spec, theme), warnings: [] };
     case "bar-race":
@@ -116,7 +117,7 @@ function bodyForSpec(spec: VisualSpec): { body: string; warnings: string[] } {
     case "pie":
     case "arc":
     case "gauge":
-      return { body: renderDonutSweep(spec, theme), warnings: spec.type === "donut" ? [] : [`${spec.type} currently uses donut sweep preview.`] };
+      return { body: renderDonutSweep(spec, theme), warnings: [] };
     case "area":
       return { body: renderAreaTrend(spec, theme), warnings: [] };
     case "line":
@@ -124,7 +125,7 @@ function bodyForSpec(spec: VisualSpec): { body: string; warnings: string[] } {
     case "slope":
     case "bump":
     case "line-race":
-      return { body: renderLineDraw(spec, theme), warnings: spec.type === "line" ? [] : [`${spec.type} currently uses line draw preview.`] };
+      return { body: renderLineDraw(spec, theme), warnings: [] };
     case "metric-card":
       return { body: renderMetricCard(spec, theme), warnings: [] };
     case "rose":

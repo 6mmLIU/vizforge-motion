@@ -8,6 +8,9 @@ const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
 
 export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string {
   if (theme.id === "editorial-light") {
+    if (spec.type === "stacked-bar") return renderDashboardStackedBar(spec, theme);
+    if (spec.type === "grouped-bar") return renderDashboardGroupedBar(spec, theme);
+    if (spec.type === "waterfall") return renderDashboardWaterfall(spec, theme);
     return renderDashboardBar(spec, theme);
   }
 
@@ -31,9 +34,9 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
         rect(
           {
             x: Number(x.toFixed(2)),
-            y: baseY,
+            y: Number(y.toFixed(2)),
             width: Number(barWidth.toFixed(2)),
-            height: 0,
+            height: Number(height.toFixed(2)),
             rx: theme.barRadius,
             fill: index === 0 ? "url(#vizforgeBar)" : color,
             opacity: 0.94
@@ -57,7 +60,7 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
               x: Number((x + barWidth / 2).toFixed(2)),
               y: Number((y - 10).toFixed(2)),
               fill: theme.text,
-              opacity: 0,
+              opacity: 1,
               "font-size": theme.typography.label,
               "font-family": "Inter, Arial, sans-serif",
               "font-weight": 700,
@@ -185,9 +188,9 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
         rect(
           {
             x: Number(x.toFixed(2)),
-            y: baseY,
+            y: Number(y.toFixed(2)),
             width: Number(barWidth.toFixed(2)),
-            height: 0,
+            height: Number(barHeight.toFixed(2)),
             rx: Number((barWidth / 2).toFixed(2)),
             fill: theme.palette[index % theme.palette.length] ?? theme.accent
           },
@@ -209,6 +212,265 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   return filterPill + kpis + grid + bars;
+}
+
+function renderDashboardStackedBar(spec: VisualSpec, theme: VisualTheme): string {
+  const width = spec.export.width;
+  const height = spec.export.height;
+  const points = extractPoints(spec, 200);
+  const plot = { x: 88, y: 138, width: width - 176, height: Math.max(150, height - 232) };
+  const baseY = plot.y + plot.height;
+  const tickMax = Math.ceil(maxAbs(points) / 10) * 10 || 10;
+  const band = barBandLayout(plot.x, plot.width, points.length, { compact: true });
+  const segments = ["自然", "付费", "留存"];
+
+  const bars = points
+    .map((point, index) => {
+      const totalHeight = Math.max(4, (Math.max(0, point.value) / tickMax) * plot.height);
+      const shares = stackShares(index);
+      const x = band.startX + index * band.slot;
+      let yCursor = baseY;
+      const delay = stagger(index, spec.motion.delayMs, Math.max(36, spec.motion.staggerMs));
+      const stacks = shares
+        .map((share, segmentIndex) => {
+          const segmentHeight = Math.max(2, totalHeight * share);
+          yCursor -= segmentHeight;
+          return rect(
+            {
+              x: Number(x.toFixed(2)),
+              y: Number(yCursor.toFixed(2)),
+              width: Number(band.barWidth.toFixed(2)),
+              height: Number(segmentHeight.toFixed(2)),
+              rx: segmentIndex === 0 ? Number((band.barWidth / 2).toFixed(2)) : 2,
+              fill: theme.palette[segmentIndex % theme.palette.length],
+              opacity: 0.95
+            },
+            animate("height", 0, Number(segmentHeight.toFixed(2)), spec.motion.durationMs, delay + segmentIndex * 55, spec.motion) +
+              animate("y", baseY, Number(yCursor.toFixed(2)), spec.motion.durationMs, delay + segmentIndex * 55, spec.motion)
+          );
+        })
+        .join("");
+      const rawLabel = point.label.match(/(?:^|[-/])(\d{1,2})$/)?.[1]?.padStart(2, "0") ?? point.label;
+
+      return (
+        stacks +
+        renderAdaptiveAxisLabel(rawLabel, {
+          x: x + band.barWidth / 2,
+          y: baseY + 34,
+          slot: band.slot,
+          index,
+          count: points.length,
+          fill: "#3f3f46",
+          fontSize: band.slot < 18 ? 11 : 14,
+          fontFamily: DASHBOARD_FONT
+        })
+      );
+    })
+    .join("");
+
+  return dashboardGrid(plot, tickMax) + renderLegend(segments, theme, width, 116) + bars;
+}
+
+function renderDashboardGroupedBar(spec: VisualSpec, theme: VisualTheme): string {
+  const width = spec.export.width;
+  const height = spec.export.height;
+  const points = extractPoints(spec, 200);
+  const plot = { x: 88, y: 138, width: width - 176, height: Math.max(150, height - 232) };
+  const baseY = plot.y + plot.height;
+  const maxValue = maxAbs(points) * 1.2;
+  const tickMax = Math.ceil(maxValue / 10) * 10 || 10;
+  const band = barBandLayout(plot.x, plot.width, points.length, { compact: true });
+  const series = ["本期", "上期", "目标"];
+  const groupGap = Math.max(1.5, Math.min(4, band.barWidth * 0.18));
+  const innerWidth = Math.max(2, (band.barWidth - groupGap * 2) / 3);
+
+  const bars = points
+    .map((point, index) => {
+      const x = band.startX + index * band.slot;
+      const values = [point.value * 0.72, point.value, point.value * (0.86 + (index % 3) * 0.12)];
+      const delay = stagger(index, spec.motion.delayMs, Math.max(36, spec.motion.staggerMs));
+      const grouped = values
+        .map((value, seriesIndex) => {
+          const barHeight = Math.max(3, (Math.max(0, value) / tickMax) * plot.height);
+          const barX = x + seriesIndex * (innerWidth + groupGap);
+          const y = baseY - barHeight;
+          return rect(
+            {
+              x: Number(barX.toFixed(2)),
+              y: Number(y.toFixed(2)),
+              width: Number(innerWidth.toFixed(2)),
+              height: Number(barHeight.toFixed(2)),
+              rx: Number((innerWidth / 2).toFixed(2)),
+              fill: theme.palette[seriesIndex % theme.palette.length]
+            },
+            animate("height", 0, Number(barHeight.toFixed(2)), spec.motion.durationMs, delay + seriesIndex * 45, spec.motion) +
+              animate("y", baseY, Number(y.toFixed(2)), spec.motion.durationMs, delay + seriesIndex * 45, spec.motion)
+          );
+        })
+        .join("");
+      const rawLabel = point.label.match(/(?:^|[-/])(\d{1,2})$/)?.[1]?.padStart(2, "0") ?? point.label;
+      return (
+        grouped +
+        renderAdaptiveAxisLabel(rawLabel, {
+          x: x + band.barWidth / 2,
+          y: baseY + 34,
+          slot: band.slot,
+          index,
+          count: points.length,
+          fill: "#3f3f46",
+          fontSize: band.slot < 18 ? 11 : 14,
+          fontFamily: DASHBOARD_FONT
+        })
+      );
+    })
+    .join("");
+
+  return dashboardGrid(plot, tickMax) + renderLegend(series, theme, width, 116) + bars;
+}
+
+function renderDashboardWaterfall(spec: VisualSpec, theme: VisualTheme): string {
+  const width = spec.export.width;
+  const height = spec.export.height;
+  const points = extractPoints(spec, 200).slice(0, 16);
+  const plot = { x: 82, y: 136, width: width - 164, height: Math.max(150, height - 230) };
+  const band = barBandLayout(plot.x, plot.width, points.length, { compact: true });
+  const deltas = points.map((point, index) => (index === 0 ? point.value : point.value - points[index - 1].value));
+  let running = 0;
+  const steps = deltas.map((delta, index) => {
+    const start = running;
+    running += delta;
+    return { point: points[index], delta, start, end: running };
+  });
+  const min = Math.min(0, ...steps.flatMap((step) => [step.start, step.end]));
+  const max = Math.max(1, ...steps.flatMap((step) => [step.start, step.end]));
+  const range = max - min || 1;
+  const yFor = (value: number) => plot.y + plot.height - ((value - min) / range) * plot.height;
+  const zeroY = yFor(0);
+
+  const bars = steps
+    .map((step, index) => {
+      const x = band.startX + index * band.slot;
+      const y1 = yFor(step.start);
+      const y2 = yFor(step.end);
+      const y = Math.min(y1, y2);
+      const barHeight = Math.max(3, Math.abs(y2 - y1));
+      const positive = step.delta >= 0;
+      const delay = stagger(index, spec.motion.delayMs, Math.max(42, spec.motion.staggerMs));
+      const nextX = band.startX + (index + 1) * band.slot;
+      const connector =
+        index < steps.length - 1
+          ? path({
+              d: `M ${(x + band.barWidth).toFixed(2)} ${y2.toFixed(2)} H ${nextX.toFixed(2)}`,
+              fill: "none",
+              stroke: "#cbd5e1",
+              "stroke-width": 1.4,
+              "stroke-dasharray": "4 5"
+            })
+          : "";
+      const rawLabel = step.point.label.match(/(?:^|[-/])(\d{1,2})$/)?.[1]?.padStart(2, "0") ?? step.point.label;
+
+      return (
+        connector +
+        rect(
+          {
+            x: Number(x.toFixed(2)),
+            y: Number(y.toFixed(2)),
+            width: Number(band.barWidth.toFixed(2)),
+            height: Number(barHeight.toFixed(2)),
+            rx: 5,
+            fill: positive ? "#14b8a6" : "#f97316",
+            opacity: 0.96
+          },
+          animate("height", 0, Number(barHeight.toFixed(2)), spec.motion.durationMs, delay, spec.motion) +
+            animate("y", zeroY, Number(y.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
+        ) +
+        renderAdaptiveAxisLabel(rawLabel, {
+          x: x + band.barWidth / 2,
+          y: plot.y + plot.height + 34,
+          slot: band.slot,
+          index,
+          count: steps.length,
+          fill: "#3f3f46",
+          fontSize: band.slot < 18 ? 11 : 14,
+          fontFamily: DASHBOARD_FONT
+        })
+      );
+    })
+    .join("");
+
+  return (
+    dashboardWaterfallGrid(plot, min, max, yFor) +
+    path({ d: `M ${plot.x} ${zeroY.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#94a3b8", "stroke-width": 1.3 }) +
+    renderLegend(["增加", "减少"], { ...theme, palette: ["#14b8a6", "#f97316"] }, width, 116) +
+    bars
+  );
+}
+
+function dashboardGrid(plot: { x: number; y: number; width: number; height: number }, tickMax: number): string {
+  const ticks = [0, tickMax * 0.25, tickMax * 0.5, tickMax * 0.75, tickMax];
+  const baseY = plot.y + plot.height;
+  return ticks
+    .map((tick) => {
+      const y = baseY - (tick / tickMax) * plot.height;
+      return (
+        textNode(formatTick(tick), {
+          x: plot.x - 18,
+          y: Number((y + 5).toFixed(2)),
+          fill: "#52525b",
+          "font-size": 14,
+          "font-family": DASHBOARD_FONT,
+          "text-anchor": "end"
+        }) +
+        path({ d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#e5e7eb", "stroke-width": 1 })
+      );
+    })
+    .join("");
+}
+
+function dashboardWaterfallGrid(plot: { x: number; y: number; width: number; height: number }, min: number, max: number, yFor: (value: number) => number): string {
+  const ticks = [min, min + (max - min) * 0.5, max];
+  return ticks
+    .map((tick) => {
+      const y = yFor(tick);
+      return (
+        textNode(formatTick(tick), {
+          x: plot.x - 18,
+          y: Number((y + 5).toFixed(2)),
+          fill: "#52525b",
+          "font-size": 14,
+          "font-family": DASHBOARD_FONT,
+          "text-anchor": "end"
+        }) +
+        path({ d: `M ${plot.x} ${y.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#e5e7eb", "stroke-width": 1 })
+      );
+    })
+    .join("");
+}
+
+function renderLegend(labels: string[], theme: VisualTheme, width: number, y: number): string {
+  const itemWidth = 84;
+  const startX = width - 52 - labels.length * itemWidth;
+  return labels
+    .map((label, index) =>
+      group(
+        rect({ x: startX + index * itemWidth, y: y - 9, width: 20, height: 8, rx: 4, fill: theme.palette[index % theme.palette.length] }) +
+          textNode(label, {
+            x: startX + index * itemWidth + 28,
+            y,
+            fill: "#52525b",
+            "font-size": 13,
+            "font-family": DASHBOARD_FONT,
+            "font-weight": 580
+          })
+      )
+    )
+    .join("");
+}
+
+function stackShares(index: number): [number, number, number] {
+  const first = 0.48 + (index % 3) * 0.04;
+  const second = 0.28 + (index % 2) * 0.05;
+  return [first, second, Math.max(0.12, 1 - first - second)];
 }
 
 function formatTick(value: number): string {

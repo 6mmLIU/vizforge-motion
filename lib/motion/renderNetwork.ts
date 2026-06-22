@@ -25,8 +25,8 @@ export function renderNetwork(spec: VisualSpec, theme: VisualTheme): string {
       const hub = { x: cx, y: cy };
       const delay = stagger(index, spec.motion.delayMs, Math.max(8, Math.min(40, 900 / Math.max(points.length, 1))));
       return (
-        line({ x1: hub.x, y1: hub.y, x2: Number(node.x.toFixed(2)), y2: Number(node.y.toFixed(2)), stroke: theme.palette[index % theme.palette.length], "stroke-width": points.length > 80 ? 0.7 : 1.4, opacity: 0 }, animate("opacity", 0, edgeOpacity, spec.motion.durationMs, delay, spec.motion)) +
-        line({ x1: Number(node.x.toFixed(2)), y1: Number(node.y.toFixed(2)), x2: Number(next.x.toFixed(2)), y2: Number(next.y.toFixed(2)), stroke: theme.border, "stroke-width": points.length > 80 ? 0.6 : 1, opacity: 0 }, animate("opacity", 0, ringOpacity, spec.motion.durationMs, delay + 120, spec.motion))
+        line({ x1: hub.x, y1: hub.y, x2: Number(node.x.toFixed(2)), y2: Number(node.y.toFixed(2)), stroke: theme.palette[index % theme.palette.length], "stroke-width": points.length > 80 ? 0.7 : 1.4, opacity: edgeOpacity }, animate("opacity", 0, edgeOpacity, spec.motion.durationMs, delay, spec.motion)) +
+        line({ x1: Number(node.x.toFixed(2)), y1: Number(node.y.toFixed(2)), x2: Number(next.x.toFixed(2)), y2: Number(next.y.toFixed(2)), stroke: theme.border, "stroke-width": points.length > 80 ? 0.6 : 1, opacity: ringOpacity }, animate("opacity", 0, ringOpacity, spec.motion.durationMs, delay + 120, spec.motion))
       );
     })
     .join("");
@@ -38,7 +38,7 @@ export function renderNetwork(spec: VisualSpec, theme: VisualTheme): string {
       .map((node, index) => {
         const delay = stagger(index, spec.motion.delayMs, Math.max(8, Math.min(55, 1100 / Math.max(points.length, 1))));
         return group(
-          circle({ cx: Number(node.x.toFixed(2)), cy: Number(node.y.toFixed(2)), r: nodeRadius, fill: theme.palette[index % theme.palette.length], opacity: 0 }, animate("opacity", 0, 0.92, 420, delay, { easing: "ease-out" })) +
+          circle({ cx: Number(node.x.toFixed(2)), cy: Number(node.y.toFixed(2)), r: nodeRadius, fill: theme.palette[index % theme.palette.length], opacity: 0.92 }, animate("opacity", 0, 0.92, 420, delay, { easing: "ease-out" })) +
             (index % labelEvery === 0
               ? textNode(node.label.slice(0, 9), { x: Number(node.x.toFixed(2)), y: Number((node.y + nodeRadius + 17).toFixed(2)), fill: theme.muted, "font-size": points.length > 40 ? 9 : 11, "font-family": "Inter, Arial, sans-serif", "text-anchor": "middle" })
               : "")

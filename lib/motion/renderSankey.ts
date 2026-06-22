@@ -68,7 +68,7 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
           "stroke-linecap": "round",
           opacity: linkOpacity,
           "stroke-dasharray": length,
-          "stroke-dashoffset": length
+          "stroke-dashoffset": 0
         },
         animate("stroke-dashoffset", length, 0, spec.motion.durationMs, delay, spec.motion)
       );

@@ -48,7 +48,7 @@ export function renderAreaTrend(spec: VisualSpec, theme: VisualTheme): string {
               fill: theme.surface,
               stroke: item.color,
               "stroke-width": 2,
-              opacity: 0
+              opacity: 1
             },
             animate("opacity", 0, 1, 220, dotDelay, { easing: "ease-out" })
           );
@@ -60,7 +60,7 @@ export function renderAreaTrend(spec: VisualSpec, theme: VisualTheme): string {
           {
             d: areaD,
             fill: item.color,
-            opacity: 0
+            opacity: series.length > 1 ? 0.14 : 0.18
           },
           animate("opacity", 0, series.length > 1 ? 0.14 : 0.18, 520, delay + 140, { easing: "ease-out" })
         ) +
@@ -74,7 +74,7 @@ export function renderAreaTrend(spec: VisualSpec, theme: VisualTheme): string {
             "stroke-linejoin": "round",
             pathLength: 1,
             "stroke-dasharray": 1,
-            "stroke-dashoffset": 1
+            "stroke-dashoffset": 0
           },
           animate("stroke-dashoffset", 1, 0, spec.motion.durationMs, delay, spec.motion)
         ) +

@@ -58,7 +58,7 @@ export function renderRadar(spec: VisualSpec, theme: VisualTheme): string {
     rings +
       axes +
       polygon(
-        { points: collapsed, fill: theme.accent, opacity: 0.24, stroke: theme.palette[0], "stroke-width": 4 },
+        { points: finalPoints, fill: theme.accent, opacity: 0.24, stroke: theme.palette[0], "stroke-width": 4 },
         animate("points", collapsed, finalPoints, spec.motion.durationMs, spec.motion.delayMs, spec.motion)
       )
   );

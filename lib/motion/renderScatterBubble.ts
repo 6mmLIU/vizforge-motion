@@ -51,7 +51,7 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
             stroke: theme.background,
             "stroke-width": 2
           }) + animateTransform("scale", 0, 1, spec.motion.durationMs, delay, spec.motion),
-          { transform: "scale(0)" }
+          { transform: "scale(1)" }
         ),
         { transform: `translate(${x.toFixed(2)} ${y.toFixed(2)})` }
       );

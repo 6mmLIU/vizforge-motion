@@ -8,7 +8,10 @@ const FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
 
 export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme): string {
   const points = orderedPoints(extractPoints(spec, 200), spec.story === "ranking");
-  if (theme.id === "editorial-light") return renderDashboardHorizontalBar(spec, theme, points);
+  if (theme.id === "editorial-light") {
+    if (spec.type === "bar-race") return renderDashboardBarRace(spec, theme, points);
+    return renderDashboardHorizontalBar(spec, theme, points);
+  }
 
   const plot = { x: 190, y: 132, width: spec.export.width - 260, height: spec.export.height - 232 };
   const max = maxAbs(points);
@@ -58,6 +61,83 @@ export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme
       );
     })
     .join("");
+}
+
+function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Point[]): string {
+  const width = spec.export.width;
+  const height = spec.export.height;
+  const ranked = orderedPoints(points, true).slice(0, 8);
+  const max = maxAbs(ranked);
+  const plot = { x: 48, y: 118, width: width - 96, height: height - 180 };
+  const row = horizontalRowLayout(plot.height, ranked.length);
+  const rankWidth = 38;
+  const labelWidth = Math.min(140, Math.max(82, longestLabelWidth(ranked, row.labelSize) + 8));
+  const barX = plot.x + rankWidth + labelWidth + 22;
+  const barWidth = Math.max(130, plot.width - rankWidth - labelWidth - 92);
+
+  return (
+    textNode("当前排名", {
+      x: plot.x,
+      y: 104,
+      fill: "#52525b",
+      "font-size": 13,
+      "font-family": FONT,
+      "font-weight": 650
+    }) +
+    ranked
+      .map((point, index) => {
+        const rowTop = plot.y + index * row.step;
+        const centerY = rowTop + row.step / 2;
+        const barY = centerY - row.barHeight / 2;
+        const targetWidth = Math.max(6, (Math.max(0, point.value) / max) * barWidth);
+        const color = theme.palette[index % theme.palette.length] ?? theme.accent;
+        const delay = stagger(index, spec.motion.delayMs, Math.max(32, Math.min(72, spec.motion.staggerMs)));
+        return group(
+          rect({ x: plot.x, y: rowTop + 4, width: plot.width, height: Math.max(18, row.step - 8), rx: 10, fill: index % 2 === 0 ? "#f8fafc" : "#ffffff" }) +
+            rect({ x: plot.x + 2, y: centerY - 14, width: 28, height: 28, rx: 14, fill: color, opacity: 0.16 }) +
+            textNode(index + 1, {
+              x: plot.x + 16,
+              y: centerY + 5,
+              fill: color,
+              "font-size": 13,
+              "font-family": FONT,
+              "font-weight": 780,
+              "text-anchor": "middle"
+            }) +
+            textNode(fitText(point.label, labelWidth, row.labelSize), {
+              x: plot.x + rankWidth,
+              y: Number((centerY + row.labelSize * 0.36).toFixed(2)),
+              fill: theme.text,
+              "font-size": row.labelSize,
+              "font-family": FONT,
+              "font-weight": 640
+            }) +
+            rect({ x: barX, y: Number(barY.toFixed(2)), width: barWidth, height: row.barHeight, rx: row.barHeight / 2, fill: "#e5e7eb" }) +
+            rect(
+              {
+                x: barX,
+                y: Number(barY.toFixed(2)),
+                width: Number(targetWidth.toFixed(2)),
+                height: row.barHeight,
+                rx: row.barHeight / 2,
+                fill: color
+              },
+              animate("width", 0, Number(targetWidth.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
+            ) +
+            textNode(formatValue(point.value), {
+              x: barX + barWidth + 14,
+              y: Number((centerY + row.valueSize * 0.36).toFixed(2)),
+              fill: theme.text,
+              opacity: 1,
+              "font-size": row.valueSize,
+              "font-family": FONT,
+              "font-weight": 700
+            },
+            animate("opacity", 0, 1, 300, delay + spec.motion.durationMs - 120, { easing: "ease-out" }))
+        );
+      })
+      .join("")
+  );
 }
 
 function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, points: Point[]): string {
