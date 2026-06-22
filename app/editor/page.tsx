@@ -41,7 +41,7 @@ import {
   Table2
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const defaultCsv = `month,value,channel
 2026-01,29,自然流量
@@ -362,6 +362,30 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 const inputClass = "w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-950 outline-none transition focus:border-blue-400 focus:bg-white";
 const selectClass = `${inputClass} appearance-none`;
 
+type ExportPreviewState = {
+  src: string;
+  status: "idle" | "loading" | "ready" | "error";
+  message: string;
+};
+
+function MatchedExportPreview({ preview, fallbackSvg }: { preview: ExportPreviewState; fallbackSvg: string }) {
+  if (preview.src) {
+    return (
+      <div className="export-card-preview">
+        <img src={preview.src} alt="导出预览" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+      {preview.status === "loading" ? <div className="py-4 text-center text-sm font-medium text-zinc-500">正在同步导出预览...</div> : null}
+      {preview.status === "error" ? <div className="py-4 text-center text-sm font-medium text-amber-700">{preview.message}</div> : null}
+      <div dangerouslySetInnerHTML={{ __html: fallbackSvg }} />
+    </div>
+  );
+}
+
 export default function EditorPage() {
   const [inputMode, setInputMode] = useState<"csv" | "json" | "markdown">("csv");
   const [csv, setCsv] = useState(defaultCsv);
@@ -379,6 +403,7 @@ export default function EditorPage() {
   const [title, setTitle] = useState("销售表现");
   const [subtitle, setSubtitle] = useState("最近周期销售数据");
   const [status, setStatus] = useState("");
+  const [exportPreview, setExportPreview] = useState<ExportPreviewState>({ src: "", status: "idle", message: "" });
 
   const rawParsed = useMemo(() => {
     if (inputMode === "json") return parseJson(json);
@@ -432,6 +457,45 @@ export default function EditorPage() {
   const visualItemCount = useMemo(() => resolveVisualItemCount(spec), [spec]);
   const resolvedPalette = useMemo(() => resolvePaletteForSpec(spec, THEMES[spec.theme]), [spec]);
   const apiRequest = JSON.stringify(spec, null, 2);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setExportPreview((current) => ({ ...current, status: "loading", message: "正在同步导出预览..." }));
+      try {
+        const response = await fetch("/api/v1/render", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...spec, export: { ...spec.export, format: "png" } }),
+          signal: controller.signal
+        });
+
+        if (!response.ok) {
+          setExportPreview((current) => ({ ...current, status: "error", message: `导出预览同步失败：${response.status}` }));
+          return;
+        }
+
+        const json = await response.json();
+        setExportPreview({
+          src: json.assets?.imageDataUrl ?? "",
+          status: "ready",
+          message: "导出预览已同步"
+        });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setExportPreview((current) => ({
+          ...current,
+          status: "error",
+          message: error instanceof Error ? error.message : "导出预览同步失败"
+        }));
+      }
+    }, 420);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [spec]);
 
   function currentInputValue() {
     if (inputMode === "json") return json;
@@ -578,18 +642,18 @@ export default function EditorPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">2. 实时预览</h2>
-                <p className="text-sm text-zinc-500">这里和导出区共用同一个 SVG 渲染结果，保证看到什么就导出什么。</p>
+                <p className="text-sm text-zinc-500">预览和 PNG/JPEG 下载使用同一条图片导出路径。</p>
               </div>
               <span className="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 lg:hidden">{recommendation.reason}</span>
             </div>
-            <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: rendered.svg }} />
+            <MatchedExportPreview preview={exportPreview} fallbackSvg={rendered.svg} />
           </Panel>
 
           <Panel className="p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">3. 动态 SVG / 图片导出</h2>
-                <p className="text-sm text-zinc-500">SVG 使用纯 SMIL 动画；图片由同一份 SVG 转换，适合公众号、PPT、报告和自动化工作流。</p>
+                <p className="text-sm text-zinc-500">图片预览与下载保持同源；SVG 仍可复制用于公众号。</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => copy(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
@@ -602,7 +666,7 @@ export default function EditorPage() {
                 </button>
               </div>
             </div>
-            <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: rendered.svg }} />
+            <MatchedExportPreview preview={exportPreview} fallbackSvg={rendered.svg} />
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {(["png", "webp", "jpeg"] as const).map((format) => (
                 <button key={format} onClick={() => void downloadImage(format)} className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">

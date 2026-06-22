@@ -11,11 +11,16 @@ export type RenderedImage = {
   extension: ImageExportFormat;
 };
 
-const CJK_FONT_FILE = "NotoSansCJKsc-Regular.otf";
-const CJK_FONT_URL = "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf";
+const CJK_FONT_BASE_URL = "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese";
+const CJK_FONT_FILES = [
+  "NotoSansCJKsc-Regular.otf",
+  "NotoSansCJKsc-Medium.otf",
+  "NotoSansCJKsc-Bold.otf"
+];
+const FONT_DOWNLOAD_TIMEOUT_MS = 700;
 
 let fontConfigReady = false;
-let fontFilePromise: Promise<string | null> | null = null;
+const fontFilePromises = new Map<string, Promise<string | null>>();
 let sharpPromise: Promise<typeof import("sharp")> | null = null;
 
 export async function svgToImage(svg: string, format: ImageExportFormat): Promise<RenderedImage> {
@@ -44,8 +49,8 @@ async function loadSharp() {
 async function configureCjkFont() {
   if (fontConfigReady) return;
 
-  const fontFile = await resolveCjkFontFile();
-  if (!fontFile) {
+  const fontFiles = await resolveCjkFontFiles();
+  if (!fontFiles.length) {
     fontConfigReady = true;
     return;
   }
@@ -53,28 +58,41 @@ async function configureCjkFont() {
   const cacheDir = join(tmpdir(), "vizforge-fontconfig-cache");
   mkdirSync(cacheDir, { recursive: true });
   const configFile = join(tmpdir(), "vizforge-fonts.conf");
-  writeFileSync(configFile, fontConfigXml(dirname(fontFile), cacheDir), "utf8");
+  writeFileSync(configFile, fontConfigXml(Array.from(new Set(fontFiles.map(dirname))), cacheDir), "utf8");
 
   process.env.FONTCONFIG_FILE = configFile;
-  process.env.FONTCONFIG_PATH = dirname(fontFile);
+  process.env.FONTCONFIG_PATH = dirname(fontFiles[0]);
   process.env.FONTCONFIG_CACHE = cacheDir;
   fontConfigReady = true;
 }
 
-async function resolveCjkFontFile(): Promise<string | null> {
-  const bundled = join(process.cwd(), "fonts", CJK_FONT_FILE);
-  if (existsSync(bundled)) return bundled;
-
-  const cached = join(tmpdir(), "vizforge-fonts", CJK_FONT_FILE);
-  if (existsSync(cached)) return cached;
-
-  fontFilePromise ??= downloadCjkFont(cached);
-  return fontFilePromise;
+async function resolveCjkFontFiles(): Promise<string[]> {
+  const files = await Promise.all(CJK_FONT_FILES.map(resolveCjkFontFile));
+  return files.filter((file): file is string => Boolean(file));
 }
 
-async function downloadCjkFont(target: string): Promise<string | null> {
+async function resolveCjkFontFile(fileName: string): Promise<string | null> {
+  const bundled = join(process.cwd(), "fonts", fileName);
+  if (existsSync(bundled)) return bundled;
+
+  const cached = join(tmpdir(), "vizforge-fonts", fileName);
+  if (existsSync(cached)) return cached;
+  if (process.env.NODE_ENV === "test" || process.env.VITEST) return null;
+
+  const existing = fontFilePromises.get(fileName);
+  if (existing) return existing;
+
+  const promise = downloadCjkFont(cached, fileName);
+  fontFilePromises.set(fileName, promise);
+  return promise;
+}
+
+async function downloadCjkFont(target: string, fileName: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FONT_DOWNLOAD_TIMEOUT_MS);
+
   try {
-    const response = await fetch(CJK_FONT_URL);
+    const response = await fetch(`${CJK_FONT_BASE_URL}/${fileName}`, { signal: controller.signal });
     if (!response.ok) return null;
     const bytes = Buffer.from(await response.arrayBuffer());
     mkdirSync(dirname(target), { recursive: true });
@@ -82,10 +100,12 @@ async function downloadCjkFont(target: string): Promise<string | null> {
     return target;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-function fontConfigXml(fontDir: string, cacheDir: string) {
+function fontConfigXml(fontDirs: string[], cacheDir: string) {
   const aliases = ["Inter", "Arial", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "sans-serif"]
     .map(
       (family) => `
@@ -96,10 +116,12 @@ function fontConfigXml(fontDir: string, cacheDir: string) {
     )
     .join("");
 
+  const dirs = fontDirs.map((fontDir) => `  <dir>${xmlEscape(fontDir)}</dir>`).join("\n");
+
   return `<?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
 <fontconfig>
-  <dir>${xmlEscape(fontDir)}</dir>
+${dirs}
   <cachedir>${xmlEscape(cacheDir)}</cachedir>
   <match target="pattern">
     <edit name="family" mode="prepend" binding="strong">
