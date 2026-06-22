@@ -9,6 +9,13 @@ export type RenderedImage = {
   buffer: Buffer;
   contentType: `image/${ImageExportFormat}`;
   extension: ImageExportFormat;
+  width: number;
+  height: number;
+  pixelRatio: number;
+};
+
+export type SvgToImageOptions = {
+  pixelRatio?: number;
 };
 
 const CJK_FONT_BASE_URL = "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese";
@@ -23,20 +30,25 @@ let fontConfigReady = false;
 const fontFilePromises = new Map<string, Promise<string | null>>();
 let sharpPromise: Promise<typeof import("sharp")> | null = null;
 
-export async function svgToImage(svg: string, format: ImageExportFormat): Promise<RenderedImage> {
+export async function svgToImage(svg: string, format: ImageExportFormat, options: SvgToImageOptions = {}): Promise<RenderedImage> {
   const sharp = await loadSharp();
-  const image = sharp(Buffer.from(staticSafeSvg(svg)));
+  const pixelRatio = resolvePixelRatio(options.pixelRatio);
+  const image = sharp(Buffer.from(scaleSvgRoot(staticSafeSvg(svg), pixelRatio)), { limitInputPixels: false });
   const buffer =
     format === "webp"
-      ? await image.webp({ quality: 92 }).toBuffer()
+      ? await image.webp({ quality: 95 }).toBuffer()
       : format === "jpeg"
-        ? await image.jpeg({ quality: 92 }).toBuffer()
+        ? await image.jpeg({ quality: 95 }).toBuffer()
         : await image.png().toBuffer();
+  const metadata = await sharp(buffer, { limitInputPixels: false }).metadata();
 
   return {
     buffer,
     contentType: `image/${format}`,
-    extension: format
+    extension: format,
+    width: metadata.width ?? 0,
+    height: metadata.height ?? 0,
+    pixelRatio
   };
 }
 
@@ -162,4 +174,31 @@ function setSvgAttribute(attributes: string, name: string, value: string) {
   const pattern = new RegExp(`\\s${name}="[^"]*"`);
   if (pattern.test(attributes)) return attributes.replace(pattern, ` ${name}="${escaped}"`);
   return `${attributes} ${name}="${escaped}"`;
+}
+
+function resolvePixelRatio(pixelRatio: number | undefined) {
+  if (!Number.isFinite(pixelRatio)) return 1;
+  return Math.min(3, Math.max(1, pixelRatio ?? 1));
+}
+
+function scaleSvgRoot(svg: string, pixelRatio: number) {
+  if (pixelRatio === 1) return svg;
+
+  return svg.replace(/<svg\b((?:"[^"]*"|'[^']*'|[^'">])*)>/i, (match, attributes: string) => {
+    const width = numericSvgAttribute(attributes, "width");
+    const height = numericSvgAttribute(attributes, "height");
+    if (!width || !height) return match;
+
+    let nextAttributes = attributes;
+    nextAttributes = setSvgAttribute(nextAttributes, "width", String(Math.round(width * pixelRatio)));
+    nextAttributes = setSvgAttribute(nextAttributes, "height", String(Math.round(height * pixelRatio)));
+    return `<svg${nextAttributes}>`;
+  });
+}
+
+function numericSvgAttribute(attributes: string, name: string) {
+  const value = attributes.match(new RegExp(`\\s${name}="([0-9.]+)(?:px)?"`, "i"))?.[1];
+  if (!value) return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 }

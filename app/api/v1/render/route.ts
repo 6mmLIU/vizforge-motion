@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
         format: spec.export.format,
         width: spec.export.width,
         height: spec.export.height,
+        pixelRatio: spec.export.pixelRatio,
         wechatSafeMode: spec.export.wechatSafeMode
       }
     };
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (acceptImageFormat) {
-      const image = await svgToImage(result.svg, acceptImageFormat);
+      const image = await svgToImage(result.svg, acceptImageFormat, { pixelRatio: spec.export.pixelRatio });
       return new NextResponse(image.buffer, {
         headers: {
           "content-type": image.contentType,
@@ -187,7 +188,7 @@ export async function POST(request: NextRequest) {
     }
 
     const jsonImageFormat = exportImageFormat ?? "png";
-    const image = await svgToImage(result.svg, jsonImageFormat);
+    const image = await svgToImage(result.svg, jsonImageFormat, { pixelRatio: spec.export.pixelRatio });
     const imageBase64 = image.buffer.toString("base64");
 
     return NextResponse.json(
@@ -200,8 +201,11 @@ export async function POST(request: NextRequest) {
           imageContentType: image.contentType,
           imageFormat: image.extension,
           palette: result.palette,
-          width: spec.export.width,
-          height: spec.export.height
+          width: image.width,
+          height: image.height,
+          pixelRatio: image.pixelRatio,
+          layoutWidth: spec.export.width,
+          layoutHeight: spec.export.height
         },
         svg: result.svg,
         palette: result.palette,

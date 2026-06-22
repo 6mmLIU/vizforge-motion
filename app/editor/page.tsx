@@ -150,6 +150,8 @@ const layoutSizes = {
   "活动热力条": { width: 960, height: 260 }
 } as const;
 
+const IMAGE_EXPORT_PIXEL_RATIO = 2;
+
 const palettePresets = [
   { name: "Hero 蓝", colors: ["#0a84ff", "#38bdf8", "#22c55e", "#f59e0b", "#f472b6"] },
   { name: "极光科技", colors: ["#30f6ff", "#a855f7", "#36d399", "#f8d66d", "#ff7ab6"] },
@@ -466,7 +468,7 @@ export default function EditorPage() {
         const response = await fetch("/api/v1/render", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...spec, export: { ...spec.export, format: "png" } }),
+          body: JSON.stringify({ ...spec, export: { ...spec.export, format: "png", pixelRatio: IMAGE_EXPORT_PIXEL_RATIO } }),
           signal: controller.signal
         });
 
@@ -537,14 +539,14 @@ export default function EditorPage() {
         "content-type": "application/json",
         accept: `image/${format}`
       },
-      body: JSON.stringify({ ...spec, export: { ...spec.export, format } })
+      body: JSON.stringify({ ...spec, export: { ...spec.export, format, pixelRatio: IMAGE_EXPORT_PIXEL_RATIO } })
     });
     if (!response.ok) {
       setStatus(`导出失败：${response.status}`);
       return;
     }
-    downloadBlob(await response.blob(), `vizforge-motion.${format}`);
-    setStatus(`${format.toUpperCase()} 已下载`);
+    downloadBlob(await response.blob(), `vizforge-motion@${IMAGE_EXPORT_PIXEL_RATIO}x.${format}`);
+    setStatus(`${format.toUpperCase()} @${IMAGE_EXPORT_PIXEL_RATIO}x 已下载`);
   }
 
   return (
@@ -642,7 +644,7 @@ export default function EditorPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">2. 实时预览</h2>
-                <p className="text-sm text-zinc-500">预览和 PNG/JPEG 下载使用同一条图片导出路径。</p>
+                <p className="text-sm text-zinc-500">预览和 PNG/JPEG 下载使用同一条 @2x 图片导出路径。</p>
               </div>
               <span className="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 lg:hidden">{recommendation.reason}</span>
             </div>
@@ -653,7 +655,7 @@ export default function EditorPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">3. 动态 SVG / 图片导出</h2>
-                <p className="text-sm text-zinc-500">图片预览与下载保持同源；SVG 仍可复制用于公众号。</p>
+                <p className="text-sm text-zinc-500">图片预览与下载保持同源；PNG/WebP/JPEG 默认输出 @2x。</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => copy(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
@@ -670,7 +672,7 @@ export default function EditorPage() {
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {(["png", "webp", "jpeg"] as const).map((format) => (
                 <button key={format} onClick={() => void downloadImage(format)} className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
-                  下载 {format.toUpperCase()}
+                  下载 {format.toUpperCase()} @2x
                 </button>
               ))}
             </div>

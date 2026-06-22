@@ -122,6 +122,7 @@ export type ExportSpec = {
   wechatSafeMode: boolean;
   width: number;
   height: number;
+  pixelRatio?: number;
 };
 
 export type FieldMapping = {
@@ -223,7 +224,8 @@ export const ExportSpecSchema = z.object({
   format: z.enum(EXPORT_FORMATS).default("animated-svg"),
   wechatSafeMode: z.boolean().default(true),
   width: z.number().int().min(320).max(2400).default(720),
-  height: z.number().int().min(240).max(1800).default(500)
+  height: z.number().int().min(240).max(1800).default(500),
+  pixelRatio: z.number().min(1).max(3).default(1)
 });
 
 export const FieldMappingSchema = z

@@ -1,4 +1,5 @@
 import { svgToImage } from "@/lib/render/svgToImage";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 describe("svgToImage", () => {
@@ -14,5 +15,18 @@ describe("svgToImage", () => {
     const image = await svgToImage(svg, "png");
     expect(image.contentType).toBe("image/png");
     expect(image.buffer.length).toBeGreaterThan(20);
+  });
+
+  it("exports higher-density PNGs without changing the SVG layout", async () => {
+    const image = await svgToImage('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" fill="#0a84ff"/></svg>', "png", {
+      pixelRatio: 2
+    });
+    const metadata = await sharp(image.buffer).metadata();
+
+    expect(image.pixelRatio).toBe(2);
+    expect(image.width).toBe(40);
+    expect(image.height).toBe(40);
+    expect(metadata.width).toBe(40);
+    expect(metadata.height).toBe(40);
   });
 });
