@@ -27,6 +27,13 @@ export type AnimatedSvgRenderResult = {
   palette: string[];
 };
 
+type RenderCanvas = {
+  physicalWidth: number;
+  physicalHeight: number;
+  logicalWidth: number;
+  logicalHeight: number;
+};
+
 const LIMITS: Partial<Record<VisualType, number>> = {
   bar: 200,
   "horizontal-bar": 200,
@@ -155,21 +162,32 @@ export function renderAnimatedSvg(input: VisualSpec): AnimatedSvgRenderResult {
   }
 
   const spec = parsed.data;
-  const theme = themeForSpec(spec);
+  const canvas = resolveRenderCanvas(spec.export.width, spec.export.height);
+  const renderSpec = {
+    ...spec,
+    export: {
+      ...spec.export,
+      width: canvas.logicalWidth,
+      height: canvas.logicalHeight
+    }
+  };
+  const theme = themeForSpec(renderSpec);
   const warnings = limitWarnings(spec);
-  const body = bodyForSpec(spec);
+  const body = bodyForSpec(renderSpec);
   warnings.push(...body.warnings);
 
   const children =
     baseDefs(theme) +
-    chartFrame(spec.export.width, spec.export.height, theme) +
-    cardTitle(spec.title, spec.subtitle, theme) +
+    chartFrame(canvas.logicalWidth, canvas.logicalHeight, theme) +
+    cardTitle(spec.title, spec.subtitle, theme, canvas.logicalWidth, canvas.logicalHeight) +
     body.body +
-    footerText(spec.caption ?? spec.insight, spec.source, theme, spec.export.height);
+    footerText(spec.caption ?? spec.insight, spec.source, theme, canvas.logicalWidth, canvas.logicalHeight);
 
   const svg = svgRoot({
-    width: spec.export.width,
-    height: spec.export.height,
+    width: canvas.physicalWidth,
+    height: canvas.physicalHeight,
+    viewBoxWidth: canvas.logicalWidth,
+    viewBoxHeight: canvas.logicalHeight,
     background: theme.background,
     children
   });
@@ -190,5 +208,41 @@ function themeForSpec(spec: VisualSpec): VisualTheme {
     ...theme,
     accent: palette[0] ?? theme.accent,
     palette
+  };
+}
+
+function resolveRenderCanvas(width: number, height: number): RenderCanvas {
+  const physicalWidth = width;
+  const physicalHeight = height;
+  const aspect = width / height;
+  const isHighResolution = width >= 1000 || height >= 900;
+
+  if (!isHighResolution) {
+    return { physicalWidth, physicalHeight, logicalWidth: width, logicalHeight: height };
+  }
+
+  let baseWidth = 720;
+  let baseHeight = Math.round(baseWidth / aspect);
+
+  if (aspect >= 2.2) {
+    baseWidth = 960;
+    baseHeight = Math.round(baseWidth / aspect);
+  } else if (aspect <= 0.9) {
+    baseWidth = 720;
+    baseHeight = Math.round(baseWidth / aspect);
+  } else {
+    baseHeight = Math.round(baseWidth / aspect);
+  }
+
+  const scale = Math.min(width / baseWidth, height / baseHeight);
+  if (scale < 1.2) {
+    return { physicalWidth, physicalHeight, logicalWidth: width, logicalHeight: height };
+  }
+
+  return {
+    physicalWidth,
+    physicalHeight,
+    logicalWidth: Math.round(width / scale),
+    logicalHeight: Math.round(height / scale)
   };
 }

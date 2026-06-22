@@ -77,12 +77,12 @@ const payload = `{
       { "label": "总销量", "value": 278, "delta": "3.3%", "trend": "up" }
     ]
   },
-  "palette": ["#0a84ff", "#38bdf8", "#22c55e", "#f59e0b"],
-  "export": { "format": "json", "target": "wechat", "width": 720, "height": 500 }
+  "palette": ["#2563eb", "#14b8a6", "#f97316", "#8b5cf6"],
+  "export": { "format": "json", "target": "xiaohongshu" }
 }`;
 
 const responseMeta = `{
-  "palette": ["#0a84ff", "#38bdf8", "..."],
+  "palette": ["#2563eb", "#14b8a6", "..."],
   "meta": {
     "visual": { "type": "bar", "story": "magnitude" },
     "mappings": { "category": "month", "value": "value", "x": "month", "y": "value" },
@@ -90,7 +90,7 @@ const responseMeta = `{
     "dataItemCount": 12,
     "itemCount": 12,
     "renderedItemCount": 12,
-    "export": { "format": "json", "width": 720, "height": 500, "wechatSafeMode": true }
+    "export": { "format": "json", "width": 1080, "height": 1440, "wechatSafeMode": true }
   },
   "assets": {
     "svg": "<svg ...>",

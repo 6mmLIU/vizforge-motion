@@ -17,7 +17,8 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
   }));
   const sources = Array.from(new Set(links.map((link) => link.source)));
   const targets = Array.from(new Set(links.map((link) => link.target)));
-  const plot = { x: 92, y: 136, width: spec.export.width - 184, height: spec.export.height - 240 };
+  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
+  const plot = { x: 92, y: tall ? 190 : 136, width: spec.export.width - 184, height: spec.export.height - (tall ? 318 : 240) };
   const max = Math.max(...links.map((link) => link.value), 1);
   const nodeCount = Math.max(sources.length, targets.length, 1);
   const nodeHeight = Math.max(2, Math.min(32, (plot.height / nodeCount) * 0.48));
@@ -35,7 +36,7 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
         return (
           rect({ x: plot.x - 8, y: Number((y - nodeHeight / 2).toFixed(2)), width: 16, height: Number(nodeHeight.toFixed(2)), rx: Math.min(7, nodeHeight / 2), fill: theme.palette[index % theme.palette.length], opacity: 0.82 }) +
           (index % sourceLabelEvery === 0
-            ? textNode(name.slice(0, 14), { x: plot.x - 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": sources.length > 24 ? 9 : 12, "font-family": "Inter, Arial, sans-serif", "text-anchor": "end" })
+            ? textNode(name.slice(0, 14), { x: plot.x - 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": sources.length > 24 ? 9 : 12, "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif", "text-anchor": "end" })
             : "")
         );
       })
@@ -46,7 +47,7 @@ export function renderSankey(spec: VisualSpec, theme: VisualTheme): string {
         return (
           rect({ x: plot.x + plot.width - 8, y: Number((y - nodeHeight / 2).toFixed(2)), width: 16, height: Number(nodeHeight.toFixed(2)), rx: Math.min(7, nodeHeight / 2), fill: theme.palette[(index + sources.length) % theme.palette.length], opacity: 0.82 }) +
           (index % targetLabelEvery === 0
-            ? textNode(name.slice(0, 14), { x: plot.x + plot.width + 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": targets.length > 24 ? 9 : 12, "font-family": "Inter, Arial, sans-serif" })
+            ? textNode(name.slice(0, 14), { x: plot.x + plot.width + 18, y: Number((y + 4).toFixed(2)), fill: theme.muted, "font-size": targets.length > 24 ? 9 : 12, "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif" })
             : "")
         );
       })

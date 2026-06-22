@@ -7,7 +7,8 @@ import type { VisualTheme } from "@/lib/visual/themes";
 export function renderTreemap(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractAggregatedPoints(spec, 200).map((point) => ({ ...point, value: Math.max(0, point.value) }));
   const total = totalPositive(points);
-  const plot = { x: 76, y: 132, width: spec.export.width - 152, height: spec.export.height - 232 };
+  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
+  const plot = { x: 76, y: tall ? 190 : 132, width: spec.export.width - 152, height: spec.export.height - (tall ? 318 : 232) };
   let cursorX = plot.x;
   let cursorY = plot.y;
   let rowHeight = plot.height * 0.46;
@@ -46,7 +47,7 @@ export function renderTreemap(spec: VisualSpec, theme: VisualTheme): string {
             y: y + 26,
             fill: theme.background,
             "font-size": 13,
-            "font-family": "Inter, Arial, sans-serif",
+            "font-family": "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif",
             "font-weight": 760
           })
       );

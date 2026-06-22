@@ -11,16 +11,27 @@ export type Point = {
 
 export function chartFrame(width: number, height: number, theme: VisualTheme): string {
   if (theme.id === "editorial-light") {
+    const inset = height / width > 1.15 ? 24 : 16;
+    const radius = height / width > 1.15 ? 28 : 24;
     return rect({
-      x: 16,
-      y: 16,
-      width: width - 32,
-      height: height - 32,
-      rx: 24,
+      x: inset,
+      y: inset,
+      width: width - inset * 2,
+      height: height - inset * 2,
+      rx: radius,
       fill: theme.surface,
       stroke: theme.border,
-      "stroke-width": 1
-    });
+      "stroke-width": 1.2
+    }) +
+      rect({
+        x: inset + 1,
+        y: inset + 1,
+        width: width - inset * 2 - 2,
+        height: Math.min(120, height * 0.16),
+        rx: radius - 1,
+        fill: "#fbfcff",
+        opacity: 0.92
+      });
   }
 
   const inset = rect({

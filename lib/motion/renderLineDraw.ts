@@ -15,8 +15,9 @@ export function renderLineDraw(spec: VisualSpec, theme: VisualTheme): string {
 
   const points = extractPoints(spec, 200);
   const dashboard = theme.id === "editorial-light";
+  const tall = dashboard && spec.export.height / spec.export.width > 1.15;
   const plot = dashboard
-    ? { x: 64, y: 150, width: spec.export.width - 128, height: spec.export.height - 238 }
+    ? { x: 64, y: tall ? 190 : 150, width: spec.export.width - 128, height: spec.export.height - (tall ? 318 : 238) }
     : { x: 76, y: 132, width: spec.export.width - 152, height: spec.export.height - 232 };
   const max = maxAbs(points);
   const step = points.length > 1 ? plot.width / (points.length - 1) : 0;
@@ -160,6 +161,7 @@ function renderMultiLineRace(spec: VisualSpec, theme: VisualTheme): string {
 
 function renderSlopeChart(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractPoints(spec, 12);
+  const tall = spec.export.height / spec.export.width > 1.15;
   const half = Math.max(1, Math.floor(points.length / 2));
   const pairs = points.slice(0, half).map((point, index) => ({
     label: point.label,
@@ -168,7 +170,7 @@ function renderSlopeChart(spec: VisualSpec, theme: VisualTheme): string {
   }));
   const values = pairs.flatMap((pair) => [pair.start, pair.end]);
   const max = Math.max(...values, 1);
-  const plot = { x: 104, y: 146, width: spec.export.width - 208, height: spec.export.height - 240 };
+  const plot = { x: 104, y: tall ? 190 : 146, width: spec.export.width - 208, height: spec.export.height - (tall ? 320 : 240) };
   const leftX = plot.x + 30;
   const rightX = plot.x + plot.width - 30;
   const yFor = (value: number) => plot.y + plot.height - (Math.max(0, value) / max) * plot.height;
@@ -215,9 +217,10 @@ function renderSlopeChart(spec: VisualSpec, theme: VisualTheme): string {
 
 function renderBumpChart(spec: VisualSpec, theme: VisualTheme): string {
   const source = extractPoints(spec, 12).slice(0, 6);
+  const tall = spec.export.height / spec.export.width > 1.15;
   const categories = source.map((point) => point.label.slice(0, 6));
   const periods = ["Q1", "Q2", "Q3", "Q4"];
-  const plot = { x: 90, y: 142, width: spec.export.width - 180, height: spec.export.height - 238 };
+  const plot = { x: 90, y: tall ? 188 : 142, width: spec.export.width - 180, height: spec.export.height - (tall ? 318 : 238) };
   const xStep = plot.width / Math.max(periods.length - 1, 1);
   const rankStep = plot.height / Math.max(categories.length - 1, 1);
 
@@ -281,7 +284,8 @@ function renderBumpChart(spec: VisualSpec, theme: VisualTheme): string {
 
 function renderTimelineChart(spec: VisualSpec, theme: VisualTheme): string {
   const points = extractPoints(spec, 18);
-  const plot = { x: 72, y: 142, width: spec.export.width - 144, height: spec.export.height - 238 };
+  const tall = spec.export.height / spec.export.width > 1.15;
+  const plot = { x: 72, y: tall ? 188 : 142, width: spec.export.width - 144, height: spec.export.height - (tall ? 318 : 238) };
   const baselineY = plot.y + plot.height * 0.62;
   const max = maxAbs(points);
   const step = points.length > 1 ? plot.width / (points.length - 1) : 0;
@@ -328,7 +332,8 @@ function renderTimelineChart(spec: VisualSpec, theme: VisualTheme): string {
 }
 
 function dashboardPlot(spec: VisualSpec) {
-  return { x: 64, y: 150, width: spec.export.width - 128, height: spec.export.height - 238 };
+  const tall = spec.export.height / spec.export.width > 1.15;
+  return { x: 64, y: tall ? 190 : 150, width: spec.export.width - 128, height: spec.export.height - (tall ? 318 : 238) };
 }
 
 function renderEndpointLabels(points: ReturnType<typeof extractPoints>, plot: { x: number; y: number; width: number; height: number }, theme: VisualTheme): string {

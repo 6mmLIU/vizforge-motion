@@ -23,15 +23,12 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
   const barWidth = band.barWidth;
   const baseY = plot.y + plot.height;
 
-  const maxIdx = points.length
-    ? points.reduce((acc, point, idx) => (Math.max(0, point.value) > Math.max(0, points[acc].value) ? idx : acc), 0)
-    : 0;
   const bars = points
     .map((point, index) => {
       const height = Math.max(3, (Math.max(0, point.value) / max) * plot.height);
       const x = band.startX + index * band.slot;
       const y = baseY - height;
-      const baseColor = theme.accent ?? theme.palette[0];
+      const color = theme.palette[index % theme.palette.length];
       const delay = stagger(index, spec.motion.delayMs, spec.motion.staggerMs);
       return group(
         rect(
@@ -41,8 +38,8 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
             width: Number(barWidth.toFixed(2)),
             height: Number(height.toFixed(2)),
             rx: theme.barRadius,
-            fill: index === maxIdx ? "url(#vizforgeBar)" : baseColor,
-            opacity: index === maxIdx ? 1 : 0.72
+            fill: index === 0 ? "url(#vizforgeBar)" : color,
+            opacity: 0.94
           },
           animate("height", 0, Number(height.toFixed(2)), spec.motion.durationMs, delay, spec.motion) +
             animate("y", baseY, Number(y.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
@@ -81,14 +78,15 @@ export function renderAnimatedBar(spec: VisualSpec, theme: VisualTheme): string 
 function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const points = extractPoints(spec, 200);
   const values = points.map((point) => Math.max(0, point.value));
   const maxValue = maxAbs(points);
   const tickMax = maxValue <= 60 ? 60 : Math.ceil(maxValue / 4) * 4;
   const metrics = (spec.card?.metrics ?? []).slice(0, 4);
   const hasMetrics = metrics.length > 0;
-  const plotTop = hasMetrics ? Math.min(204, Math.max(182, height * 0.41)) : 122;
-  const plotBottom = height - 84;
+  const plotTop = hasMetrics ? (tall ? 278 : Math.min(204, Math.max(182, height * 0.41))) : tall ? 182 : 122;
+  const plotBottom = height - (tall ? 132 : 84);
   const plot = {
     x: 88,
     y: plotTop,
@@ -129,13 +127,15 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
       const x = 40 + index * columnWidth;
       const value = formatMetricValue(metric.value, metric.prefix, metric.suffix);
       const trend = metricTrend(metric);
-      const valueSize = metrics.length > 3 ? 25 : 28;
+      const valueSize = tall ? (metrics.length > 3 ? 27 : 31) : metrics.length > 3 ? 25 : 28;
       const deltaX = x + Math.min(columnWidth - 54, Math.max(66, value.length * valueSize * 0.52 + 18));
+      const valueY = tall ? 188 : 122;
+      const labelY = tall ? 222 : 152;
 
       return (
         textNode(value, {
           x,
-          y: 122,
+          y: valueY,
           fill: theme.text,
           "font-size": valueSize,
           "font-family": DASHBOARD_FONT,
@@ -144,16 +144,16 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
         (trend
           ? textNode(trend.text, {
               x: Number(deltaX.toFixed(2)),
-              y: 120,
+              y: valueY - 2,
               fill: trend.fill,
-              "font-size": 15,
+              "font-size": tall ? 14 : 15,
               "font-family": DASHBOARD_FONT,
               "font-weight": 520
             })
           : "") +
         textNode(metric.label, {
           x,
-          y: 152,
+          y: labelY,
           fill: "#52525b",
           "font-size": metrics.length > 3 ? 14 : 17,
           "font-family": DASHBOARD_FONT
@@ -177,8 +177,6 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
       })
     : "";
 
-  const barColor = theme.accent ?? theme.palette[0];
-  const maxIndexValue = values.length ? values.reduce((acc, val, idx) => (val > values[acc] ? idx : acc), 0) : 0;
   const bars = points
     .map((point, index) => {
       const value = values[index] ?? 0;
@@ -197,8 +195,7 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
             width: Number(barWidth.toFixed(2)),
             height: Number(barHeight.toFixed(2)),
             rx: Number((barWidth / 2).toFixed(2)),
-            fill: barColor,
-            opacity: index === maxIndexValue ? 1 : 0.7
+            fill: theme.palette[index % theme.palette.length] ?? theme.accent
           },
           animate("height", 0, Number(barHeight.toFixed(2)), spec.motion.durationMs, delay, spec.motion) +
             animate("y", baseY, Number(y.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
@@ -223,8 +220,9 @@ function renderDashboardBar(spec: VisualSpec, theme: VisualTheme): string {
 function renderDashboardStackedBar(spec: VisualSpec, theme: VisualTheme): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const points = extractPoints(spec, 200);
-  const plot = { x: 88, y: 138, width: width - 176, height: Math.max(150, height - 232) };
+  const plot = { x: 88, y: tall ? 184 : 138, width: width - 176, height: Math.max(150, height - (tall ? 316 : 232)) };
   const baseY = plot.y + plot.height;
   const tickMax = Math.ceil(maxAbs(points) / 10) * 10 || 10;
   const band = barBandLayout(plot.x, plot.width, points.length, { compact: true });
@@ -274,14 +272,15 @@ function renderDashboardStackedBar(spec: VisualSpec, theme: VisualTheme): string
     })
     .join("");
 
-  return dashboardGrid(plot, tickMax) + renderLegend(segments, theme, width, 116) + bars;
+  return dashboardGrid(plot, tickMax) + renderLegend(segments, theme, width, tall ? 160 : 116) + bars;
 }
 
 function renderDashboardGroupedBar(spec: VisualSpec, theme: VisualTheme): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const points = extractPoints(spec, 200);
-  const plot = { x: 88, y: 138, width: width - 176, height: Math.max(150, height - 232) };
+  const plot = { x: 88, y: tall ? 184 : 138, width: width - 176, height: Math.max(150, height - (tall ? 316 : 232)) };
   const baseY = plot.y + plot.height;
   const maxValue = maxAbs(points) * 1.2;
   const tickMax = Math.ceil(maxValue / 10) * 10 || 10;
@@ -331,14 +330,15 @@ function renderDashboardGroupedBar(spec: VisualSpec, theme: VisualTheme): string
     })
     .join("");
 
-  return dashboardGrid(plot, tickMax) + renderLegend(series, theme, width, 116) + bars;
+  return dashboardGrid(plot, tickMax) + renderLegend(series, theme, width, tall ? 160 : 116) + bars;
 }
 
 function renderDashboardWaterfall(spec: VisualSpec, theme: VisualTheme): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const points = extractPoints(spec, 200).slice(0, 16);
-  const plot = { x: 82, y: 136, width: width - 164, height: Math.max(150, height - 230) };
+  const plot = { x: 82, y: tall ? 184 : 136, width: width - 164, height: Math.max(150, height - (tall ? 318 : 230)) };
   const band = barBandLayout(plot.x, plot.width, points.length, { compact: true });
   const deltas = points.map((point, index) => (index === 0 ? point.value : point.value - points[index - 1].value));
   let running = 0;
@@ -407,7 +407,7 @@ function renderDashboardWaterfall(spec: VisualSpec, theme: VisualTheme): string 
   return (
     dashboardWaterfallGrid(plot, min, max, yFor) +
     path({ d: `M ${plot.x} ${zeroY.toFixed(2)} H ${plot.x + plot.width}`, fill: "none", stroke: "#94a3b8", "stroke-width": 1.3 }) +
-    renderLegend(["增加", "减少"], { ...theme, palette: ["#14b8a6", "#f97316"] }, width, 116) +
+    renderLegend(["增加", "减少"], { ...theme, palette: ["#14b8a6", "#f97316"] }, width, tall ? 160 : 116) +
     bars
   );
 }

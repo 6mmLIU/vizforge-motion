@@ -69,7 +69,7 @@ export function renderDonutSweep(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   const legend = dashboard
-    ? renderDashboardVerticalLegend(spec, theme, points, total)
+    ? renderDashboardVerticalLegend(spec, theme, points, total, 176)
     : renderHorizontalWrapLegend(spec, theme, points);
 
   return group(
@@ -123,6 +123,113 @@ function renderPieChart(spec: VisualSpec, theme: VisualTheme, points: ReturnType
     .join("");
 
   return group(slices + renderPartLegend(spec, theme, points, total));
+}
+
+function renderDashboardVerticalLegend(
+  spec: VisualSpec,
+  theme: VisualTheme,
+  points: ReturnType<typeof extractAggregatedPoints>,
+  total: number,
+  startY: number
+): string {
+  const available = Math.max(96, spec.export.height - startY - 58);
+  const rowGap = Math.max(24, Math.min(38, available / Math.max(1, Math.min(points.length, 10))));
+  const maxRows = Math.max(3, Math.min(10, Math.floor(available / rowGap)));
+  const visible = points.slice(0, maxRows);
+  const x = spec.export.width * 0.62;
+  const rows = visible
+    .map((point, index) => {
+      const color = theme.palette[index % theme.palette.length];
+      const positiveValue = Math.max(0, point.value);
+      const percent = `${((positiveValue / total) * 100).toFixed(positiveValue === total ? 0 : 1)}%`;
+      const y = startY + index * rowGap;
+      return group(
+        circle({ cx: x, cy: y - 5, r: 5.5, fill: color }) +
+          textNode(point.label.slice(0, 9), {
+            x: x + 12,
+            y,
+            fill: theme.text,
+            "font-size": 14,
+            "font-family": DASHBOARD_FONT,
+            "font-weight": 580
+          }) +
+          textNode(formatNumber(positiveValue), {
+            x: spec.export.width - 106,
+            y,
+            fill: "#52525b",
+            "font-size": 13,
+            "font-family": DASHBOARD_FONT,
+            "text-anchor": "end"
+          }) +
+          textNode(percent, {
+            x: spec.export.width - 54,
+            y,
+            fill: "#71717a",
+            "font-size": 13,
+            "font-family": DASHBOARD_FONT,
+            "text-anchor": "end"
+          })
+      );
+    })
+    .join("");
+
+  const overflow = points.length - visible.length;
+  const overflowNode =
+    overflow > 0
+      ? textNode(`其余 ${overflow} 项`, {
+          x,
+          y: startY + visible.length * rowGap,
+          fill: theme.muted,
+          "font-size": 13,
+          "font-family": DASHBOARD_FONT,
+          "font-weight": 560
+        })
+      : "";
+
+  return rows + overflowNode;
+}
+
+function renderHorizontalWrapLegend(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>): string {
+  const itemWidth = 138;
+  const startX = 70;
+  const startY = spec.export.height - 92;
+  const perRow = Math.max(1, Math.floor((spec.export.width - startX * 2) / itemWidth));
+  const maxItems = Math.min(points.length, perRow * 2);
+  const visible = points.slice(0, maxItems);
+  const rows = visible
+    .map((point, index) => {
+      const color = theme.palette[index % theme.palette.length];
+      const col = index % perRow;
+      const row = Math.floor(index / perRow);
+      const x = startX + col * itemWidth;
+      const y = startY + row * 24;
+      return group(
+        circle({ cx: x, cy: y - 4, r: 5, fill: color }) +
+          textNode(point.label.slice(0, 14), {
+            x: x + 12,
+            y,
+            fill: theme.muted,
+            "font-size": theme.typography.label,
+            "font-family": DASHBOARD_FONT
+          })
+      );
+    })
+    .join("");
+
+  const overflow = points.length - visible.length;
+  return (
+    rows +
+    (overflow > 0
+      ? textNode(`+${overflow}`, {
+          x: startX + (visible.length % perRow) * itemWidth,
+          y: startY + Math.floor(visible.length / perRow) * 24,
+          fill: theme.muted,
+          "font-size": theme.typography.label,
+          "font-family": DASHBOARD_FONT,
+          "font-weight": 700
+        })
+      : "")
+  );
 }
 
 function renderArcBands(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>): string {
@@ -251,126 +358,7 @@ function renderGauge(spec: VisualSpec, theme: VisualTheme, total: number): strin
 }
 
 function renderPartLegend(spec: VisualSpec, theme: VisualTheme, points: ReturnType<typeof extractAggregatedPoints>, total: number): string {
-  return renderDashboardVerticalLegend(spec, theme, points, total);
-}
-
-function renderDashboardVerticalLegend(
-  spec: VisualSpec,
-  theme: VisualTheme,
-  points: ReturnType<typeof extractAggregatedPoints>,
-  total: number
-): string {
-  const top = 176;
-  const bottomPadding = 32;
-  const minRowStep = 24;
-  const maxRowStep = 38;
-  const available = Math.max(minRowStep, spec.export.height - top - bottomPadding);
-  const fitCount = Math.max(1, Math.min(points.length, Math.floor(available / minRowStep) + 1));
-  const visibleCount = Math.min(points.length, fitCount, 10);
-  const rowStep = visibleCount > 1 ? Math.max(minRowStep, Math.min(maxRowStep, available / visibleCount)) : maxRowStep;
-  const overflow = points.length - visibleCount;
-  const visible = points.slice(0, visibleCount);
-
-  const items = visible
-    .map((point, index) => {
-      const color = theme.palette[index % theme.palette.length];
-      const positiveValue = Math.max(0, point.value);
-      const percent = total > 0 ? `${((positiveValue / total) * 100).toFixed(positiveValue === total ? 0 : 1)}%` : "0%";
-      const x = spec.export.width * 0.62;
-      const y = top + index * rowStep;
-      return group(
-        circle({ cx: x, cy: y - 5, r: 5.5, fill: color }) +
-          textNode(point.label.slice(0, 9), {
-            x: x + 12,
-            y,
-            fill: theme.text,
-            "font-size": 14,
-            "font-family": DASHBOARD_FONT,
-            "font-weight": 580
-          }) +
-          textNode(formatNumber(positiveValue), {
-            x: spec.export.width - 106,
-            y,
-            fill: "#52525b",
-            "font-size": 13,
-            "font-family": DASHBOARD_FONT,
-            "text-anchor": "end"
-          }) +
-          textNode(percent, {
-            x: spec.export.width - 54,
-            y,
-            fill: "#71717a",
-            "font-size": 13,
-            "font-family": DASHBOARD_FONT,
-            "text-anchor": "end"
-          })
-      );
-    })
-    .join("");
-
-  if (overflow <= 0) return items;
-  const moreY = top + visibleCount * rowStep;
-  return (
-    items +
-    textNode(`其余 ${overflow} 项`, {
-      x: spec.export.width * 0.62,
-      y: moreY,
-      fill: "#71717a",
-      "font-size": 12,
-      "font-family": DASHBOARD_FONT
-    })
-  );
-}
-
-function renderHorizontalWrapLegend(
-  spec: VisualSpec,
-  theme: VisualTheme,
-  points: ReturnType<typeof extractAggregatedPoints>
-): string {
-  const left = 64;
-  const right = spec.export.width - 32;
-  const available = Math.max(200, right - left);
-  const itemMin = 110;
-  const perRow = Math.max(1, Math.min(points.length, Math.floor(available / itemMin)));
-  const itemWidth = available / perRow;
-  const maxRows = 2;
-  const visibleCount = Math.min(points.length, perRow * maxRows);
-  const visible = points.slice(0, visibleCount);
-  const rowGap = 22;
-  const baseY = spec.export.height - 36 - (Math.ceil(visibleCount / perRow) - 1) * rowGap;
-
-  const items = visible
-    .map((point, index) => {
-      const color = theme.palette[index % theme.palette.length];
-      const row = Math.floor(index / perRow);
-      const col = index % perRow;
-      const x = left + col * itemWidth;
-      const y = baseY + row * rowGap;
-      return group(
-        circle({ cx: x, cy: y - 4, r: 5, fill: color }) +
-          textNode(point.label.slice(0, 14), {
-            x: x + 12,
-            y,
-            fill: theme.muted,
-            "font-size": theme.typography.label,
-            "font-family": DASHBOARD_FONT
-          })
-      );
-    })
-    .join("");
-
-  if (points.length <= visibleCount) return items;
-  return (
-    items +
-    textNode(`+${points.length - visibleCount}`, {
-      x: right,
-      y: baseY,
-      fill: theme.muted,
-      "font-size": theme.typography.label,
-      "font-family": DASHBOARD_FONT,
-      "text-anchor": "end"
-    })
-  );
+  return renderDashboardVerticalLegend(spec, theme, points, total, 176);
 }
 
 function pieSlicePath(cx: number, cy: number, radius: number, startAngle: number, endAngle: number): string {

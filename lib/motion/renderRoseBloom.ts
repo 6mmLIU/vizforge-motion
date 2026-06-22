@@ -5,6 +5,16 @@ import type { VisualTheme } from "@/lib/visual/themes";
 
 const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
 
+type RoseLabel = {
+  point: ReturnType<typeof extractAggregatedPoints>[number];
+  index: number;
+  elbow: { x: number; y: number };
+  pos: { x: number; y: number };
+  rightSide: boolean;
+  labelX: number;
+  labelY: number;
+};
+
 function formatNumber(value: number): string {
   return value.toLocaleString("zh-CN", { maximumFractionDigits: value >= 10 ? 0 : 1 });
 }
@@ -63,25 +73,38 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
     .join("");
 
   const labelStep = points.length <= 8 ? 1 : points.length <= 14 ? 2 : Math.ceil(points.length / 7);
-  const labelCap = dashboard ? 10 : 14;
-  const showValue = dashboard && points.length <= 8;
-  const labels = points
+  const rawLabels = points
     .map((point, index) => ({ point, index }))
     .filter(({ index }) => index % labelStep === 0)
-    .slice(0, labelCap)
-    .map(({ point, index }) => {
+    .slice(0, dashboard ? 10 : 16)
+    .map<RoseLabel>(({ point, index }) => {
       const angleMid = startOffset + index * angle + angle / 2;
       const elbow = polarToCartesian(cx, cy, maxRadius + (dashboard ? 10 : 18), angleMid);
       const pos = polarToCartesian(cx, cy, maxRadius + (dashboard ? 28 : 28), angleMid);
       const rightSide = pos.x >= cx;
-      const labelX = pos.x + (dashboard ? (rightSide ? 16 : -16) : 0);
+      const rawLabelX = pos.x + (dashboard ? (rightSide ? 16 : -16) : 0);
+      const labelX = dashboard ? clamp(rawLabelX, 28, spec.export.width - 28) : rawLabelX;
+      return {
+        point,
+        index,
+        elbow,
+        pos,
+        rightSide,
+        labelX,
+        labelY: pos.y + (points.length <= 8 ? -2 : 4)
+      };
+    });
+
+  const arrangedLabels = dashboard
+    ? arrangeRoseLabels(rawLabels, 16, Math.max(126, cy - maxRadius - 62), Math.min(spec.export.height - 78, cy + maxRadius + 74))
+    : rawLabels;
+
+  const labels = arrangedLabels
+    .map(({ point, index, elbow, pos, rightSide, labelX, labelY }) => {
       const anchor = dashboard ? (rightSide ? "start" : "end") : "middle";
-      const minX = dashboard && !rightSide ? 88 : 32;
-      const maxX = dashboard && rightSide ? spec.export.width - 88 : spec.export.width - 32;
-      const clampedLabelX = Math.max(minX, Math.min(maxX, labelX));
       const leader = dashboard
         ? path({
-            d: `M ${elbow.x.toFixed(2)} ${elbow.y.toFixed(2)} L ${pos.x.toFixed(2)} ${pos.y.toFixed(2)} H ${clampedLabelX.toFixed(2)}`,
+            d: `M ${elbow.x.toFixed(2)} ${elbow.y.toFixed(2)} L ${pos.x.toFixed(2)} ${pos.y.toFixed(2)} L ${labelX.toFixed(2)} ${labelY.toFixed(2)}`,
             fill: "none",
             stroke: theme.palette[index % theme.palette.length],
             "stroke-width": 1.1,
@@ -92,18 +115,18 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
       return (
         leader +
         textNode(point.label.slice(0, 8), {
-          x: Number(clampedLabelX.toFixed(2)),
-          y: Number((pos.y + (points.length <= 8 ? -2 : 4)).toFixed(2)),
+          x: Number(labelX.toFixed(2)),
+          y: Number(labelY.toFixed(2)),
           fill: dashboard ? theme.text : theme.muted,
           "font-size": dashboard ? 12 : 12,
           "font-family": DASHBOARD_FONT,
           "font-weight": dashboard ? 560 : undefined,
           "text-anchor": anchor
         }) +
-        (showValue
+        (dashboard && points.length <= 8
           ? textNode(formatNumber(point.value), {
-              x: Number(clampedLabelX.toFixed(2)),
-              y: Number((pos.y + 15).toFixed(2)),
+              x: Number(labelX.toFixed(2)),
+              y: Number((labelY + 15).toFixed(2)),
               fill: "#71717a",
               "font-size": 11,
               "font-family": DASHBOARD_FONT,
@@ -119,4 +142,27 @@ export function renderRoseBloom(spec: VisualSpec, theme: VisualTheme): string {
       circle({ cx, cy, r: inner - 1, fill: theme.surface, stroke: dashboard ? "#ffffff" : undefined, "stroke-width": dashboard ? 1.4 : undefined }) +
       labels
   );
+}
+
+function arrangeRoseLabels(labels: RoseLabel[], minGap: number, minY: number, maxY: number): RoseLabel[] {
+  const left = labels.filter((label) => !label.rightSide);
+  const right = labels.filter((label) => label.rightSide);
+  return [...arrangeSide(left, minGap, minY, maxY), ...arrangeSide(right, minGap, minY, maxY)].sort((a, b) => a.index - b.index);
+}
+
+function arrangeSide(labels: RoseLabel[], minGap: number, minY: number, maxY: number): RoseLabel[] {
+  const sorted = [...labels].sort((a, b) => a.labelY - b.labelY);
+  let cursor = minY;
+  const forward = sorted.map((label) => {
+    const labelY = Math.max(cursor, clamp(label.labelY, minY, maxY));
+    cursor = labelY + minGap;
+    return { ...label, labelY };
+  });
+  const overflow = forward.length ? forward[forward.length - 1].labelY - maxY : 0;
+  if (overflow <= 0) return forward;
+  return forward.map((label) => ({ ...label, labelY: clamp(label.labelY - overflow, minY, maxY) }));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

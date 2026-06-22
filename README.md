@@ -76,12 +76,10 @@ Accept: application/json
       { "label": "总销量", "value": 278, "delta": "3.3%", "trend": "up" }
     ]
   },
-  "palette": ["#0a84ff", "#38bdf8", "#22c55e", "#f59e0b"],
+  "palette": ["#2563eb", "#14b8a6", "#f97316", "#8b5cf6"],
   "export": {
     "format": "json",
-    "target": "wechat",
-    "width": 720,
-    "height": 500
+    "target": "xiaohongshu"
   }
 }
 ```
@@ -113,6 +111,12 @@ Accept: application/json
 - `json`
 
 当请求头 `Accept` 为 `image/png`、`image/webp` 或 `image/jpeg` 时，接口会直接返回图片二进制。
+
+常用尺寸预设：
+
+- `export.target: "xiaohongshu"`：1080 × 1440 竖版高清卡片，适合小红书、社媒长图。
+- `export.target: "highres"` 或 `"poster"`：1440 × 1000 高清横卡，适合报告、封面和公众号配图。
+- `export.target: "wechat"`：保持微信安全模式；如同时传 `width` 和 `height`，以显式尺寸为准。
 
 ## 微信安全模式
 
@@ -154,9 +158,7 @@ Accept: application/json
   ],
   "export": {
     "format": "json",
-    "target": "wechat",
-    "width": 720,
-    "height": 500
+    "target": "xiaohongshu"
   }
 }
 ```

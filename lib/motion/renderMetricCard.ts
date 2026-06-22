@@ -8,6 +8,7 @@ const DASHBOARD_FONT = "Inter, Microsoft YaHei, PingFang SC, Arial, sans-serif";
 export function renderMetricCard(spec: VisualSpec, theme: VisualTheme): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const points = extractPoints(spec, 200);
   const primaryPoint = points[0] ?? { label: "指标", value: 0, raw: {} };
   const metrics = spec.card?.metrics ?? [];
@@ -19,16 +20,16 @@ export function renderMetricCard(spec: VisualSpec, theme: VisualTheme): string {
   const trend = primaryMetric ? metricTrend(primaryMetric) : null;
   const periodPill = spec.card?.periodLabel ? renderPeriodPill(width, spec.card.periodLabel.slice(0, 24)) : "";
   const secondaryMetrics = metrics.slice(1, 4);
-  const secondaryRow = secondaryMetrics.length ? renderSecondaryMetrics(secondaryMetrics, width) : "";
-  const sparkTop = secondaryMetrics.length ? height - 142 : height - 160;
-  const spark = points.length ? renderDataSparkBars(points, theme, width, sparkTop, spec.motion.delayMs, spec.motion.durationMs) : "";
+  const secondaryRow = secondaryMetrics.length ? renderSecondaryMetrics(secondaryMetrics, width, tall ? 354 : 270) : "";
+  const sparkTop = tall ? height - 414 : secondaryMetrics.length ? height - 142 : height - 160;
+  const spark = points.length ? renderDataSparkBars(points, theme, width, sparkTop, spec.motion.delayMs, spec.motion.durationMs, tall ? 236 : 92) : "";
 
   const trendText = trend
     ? textNode(trend.text, {
-        x: Math.min(width - 160, 64 + primaryValue.length * 28),
-        y: 188,
+        x: Math.min(width - 160, 64 + primaryValue.length * (tall ? 34 : 28)),
+        y: tall ? 246 : 188,
         fill: trend.fill,
-        "font-size": 16,
+        "font-size": tall ? 17 : 16,
         "font-family": DASHBOARD_FONT,
         "font-weight": 560
       })
@@ -38,9 +39,9 @@ export function renderMetricCard(spec: VisualSpec, theme: VisualTheme): string {
     periodPill +
       textNode(primaryLabel, {
         x: 64,
-        y: 146,
+        y: tall ? 184 : 146,
         fill: "#52525b",
-        "font-size": 17,
+        "font-size": tall ? 18 : 17,
         "font-family": DASHBOARD_FONT,
         "font-weight": 520
       }) +
@@ -48,15 +49,15 @@ export function renderMetricCard(spec: VisualSpec, theme: VisualTheme): string {
         primaryValue,
         {
           x: 62,
-          y: 198,
+          y: tall ? 260 : 198,
           fill: theme.text,
           opacity: 1,
-          "font-size": 46,
+          "font-size": tall ? 58 : 46,
           "font-weight": 760,
           "font-family": DASHBOARD_FONT
         },
         animate("opacity", 0, 1, 420, spec.motion.delayMs + 180, { easing: "ease-out" }) +
-          animate("y", 214, 198, 420, spec.motion.delayMs + 180, { easing: "ease-out" })
+          animate("y", tall ? 278 : 214, tall ? 260 : 198, 420, spec.motion.delayMs + 180, { easing: "ease-out" })
       ) +
       trendText +
       secondaryRow +
@@ -64,27 +65,24 @@ export function renderMetricCard(spec: VisualSpec, theme: VisualTheme): string {
   );
 }
 
-function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: VisualTheme, width: number, top: number, delay: number, duration: number) {
+function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: VisualTheme, width: number, top: number, delay: number, duration: number, plotHeight = 92) {
   const plot = {
     x: 64,
     y: top,
     width: width - 128,
-    height: 92
+    height: plotHeight
   };
   const max = maxAbs(points);
   const slot = plot.width / Math.max(points.length, 1);
   const barWidth = Math.max(points.length > 80 ? 1.5 : 3, Math.min(18, slot * 0.5));
   const baseY = plot.y + plot.height;
 
-  const sparkColor = theme.accent ?? theme.palette[0];
   const bars = points
     .map((point, index) => {
       const value = Math.max(0, point.value);
       const barHeight = Math.max(6, (value / max) * plot.height);
       const x = plot.x + index * slot + (slot - barWidth) / 2;
       const y = baseY - barHeight;
-      const strength = max > 0 ? Math.max(0, value) / max : 0;
-      const opacity = Number((0.45 + 0.5 * strength).toFixed(2));
       return rect(
         {
           x: Number(x.toFixed(2)),
@@ -92,8 +90,8 @@ function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: Vi
           width: Number(barWidth.toFixed(2)),
           height: Number(barHeight.toFixed(2)),
           rx: Number((barWidth / 2).toFixed(2)),
-          fill: sparkColor,
-          opacity
+          fill: theme.palette[index % theme.palette.length] ?? theme.accent,
+          opacity: 0.88
         },
         animate("height", 0, Number(barHeight.toFixed(2)), duration, delay + index * 36, { easing: "cinematic" }) +
           animate("y", baseY, Number(y.toFixed(2)), duration, delay + index * 36, { easing: "cinematic" })
@@ -128,7 +126,7 @@ function renderDataSparkBars(points: ReturnType<typeof extractPoints>, theme: Vi
   return axis + bars;
 }
 
-function renderSecondaryMetrics(metrics: CardMetric[], width: number): string {
+function renderSecondaryMetrics(metrics: CardMetric[], width: number, top: number): string {
   const gap = 18;
   const startX = 64;
   const available = width - 128 - gap * (metrics.length - 1);
@@ -142,7 +140,7 @@ function renderSecondaryMetrics(metrics: CardMetric[], width: number): string {
       return (
         textNode(value, {
           x,
-          y: 270,
+          y: top,
           fill: "#050505",
           "font-size": 22,
           "font-family": DASHBOARD_FONT,
@@ -151,7 +149,7 @@ function renderSecondaryMetrics(metrics: CardMetric[], width: number): string {
         (trend
           ? textNode(trend.text, {
               x: x + Math.min(itemWidth - 34, Math.max(58, value.length * 12 + 14)),
-              y: 268,
+              y: top - 2,
               fill: trend.fill,
               "font-size": 13,
               "font-family": DASHBOARD_FONT,
@@ -160,7 +158,7 @@ function renderSecondaryMetrics(metrics: CardMetric[], width: number): string {
           : "") +
         textNode(metric.label, {
           x,
-          y: 296,
+          y: top + 28,
           fill: "#52525b",
           "font-size": 14,
           "font-family": DASHBOARD_FONT

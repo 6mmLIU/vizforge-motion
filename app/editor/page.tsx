@@ -141,6 +141,8 @@ const defaultMarkdown = rowsToMarkdown(DEFAULT_VISUAL_SPEC.data.rows, ["month", 
 const defaultCardJson = JSON.stringify(DEFAULT_VISUAL_SPEC.card, null, 2);
 
 const layoutSizes = {
+  "小红书竖卡": { width: 1080, height: 1440 },
+  "高清横卡": { width: 1440, height: 1000 },
   "公众号横卡": { width: 720, height: 500 },
   "方形社媒": { width: 640, height: 640 },
   "PPT 宽图": { width: 960, height: 540 },
@@ -157,9 +159,9 @@ const palettePresets = [
 
 const templatePresets = [
   {
-    name: "公众号动态图卡",
+    name: "小红书数据卡",
     title: "销售表现",
-    subtitle: "最近周期销售数据",
+    subtitle: "最近周期销售数据，一眼看清高峰月份",
     type: "bar" as VisualType,
     story: "magnitude" as VisualStory,
     motion: "grow" as MotionPreset,
@@ -167,7 +169,8 @@ const templatePresets = [
     sampleCsv: defaultCsv,
     sampleJson: defaultJson,
     sampleMarkdown: defaultMarkdown,
-    sampleCardJson: defaultCardJson
+    sampleCardJson: defaultCardJson,
+    layout: "小红书竖卡" as keyof typeof layoutSizes
   },
   {
     name: "横向排行条形",
@@ -370,7 +373,7 @@ export default function EditorPage() {
   const [story, setStory] = useState<VisualStory>("magnitude");
   const [theme, setTheme] = useState<ThemeId>("editorial-light");
   const [motionPreset, setMotionPreset] = useState<MotionPreset>("grow");
-  const [layout, setLayout] = useState<keyof typeof layoutSizes>("公众号横卡");
+  const [layout, setLayout] = useState<keyof typeof layoutSizes>("小红书竖卡");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("animated-svg");
   const [wechatSafe, setWechatSafe] = useState(true);
   const [title, setTitle] = useState("销售表现");

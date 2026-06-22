@@ -22,8 +22,8 @@ const defaultPayload = JSON.stringify(
         { label: "总销量", value: 278, delta: "3.3%", trend: "up" }
       ]
     },
-    palette: ["#0a84ff", "#38bdf8", "#22c55e", "#f59e0b"],
-    export: { format: "json", target: "wechat", width: 720, height: 500 }
+    palette: ["#2563eb", "#14b8a6", "#f97316", "#8b5cf6"],
+    export: { format: "json", target: "xiaohongshu" }
   },
   null,
   2

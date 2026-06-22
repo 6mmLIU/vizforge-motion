@@ -18,7 +18,6 @@ export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme
   const rowHeight = Math.min(42, plot.height / Math.max(points.length, 1));
   const barHeight = Math.max(points.length > 80 ? 1.5 : 3, Math.min(14, rowHeight * 0.52));
 
-  const accent = theme.accent ?? theme.palette[0];
   return points
     .map((point, index) => {
       const y = plot.y + index * rowHeight + (rowHeight - barHeight) / 2;
@@ -42,8 +41,8 @@ export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme
               width: Number(targetWidth.toFixed(2)),
               height: Number(barHeight.toFixed(2)),
               rx: theme.barRadius,
-              fill: accent,
-              opacity: index === 0 ? 1 : 0.7
+              fill: theme.palette[index % theme.palette.length] ?? theme.accent,
+              opacity: 0.94
             },
             animate("width", 0, Number(targetWidth.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
           ) +
@@ -67,10 +66,11 @@ export function renderAnimatedHorizontalBar(spec: VisualSpec, theme: VisualTheme
 function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Point[]): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const ranked = orderedPoints(points, true).slice(0, 8);
   const max = maxAbs(ranked);
-  const plot = { x: 48, y: 118, width: width - 96, height: height - 180 };
-  const row = horizontalRowLayout(plot.height, ranked.length);
+  const plot = { x: 48, y: tall ? 172 : 118, width: width - 96, height: height - (tall ? 278 : 180) };
+  const row = horizontalRowLayout(plot.height, ranked.length, tall);
   const rankWidth = 38;
   const labelWidth = Math.min(140, Math.max(82, longestLabelWidth(ranked, row.labelSize) + 8));
   const barX = plot.x + rankWidth + labelWidth + 22;
@@ -79,9 +79,9 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
   return (
     textNode("当前排名", {
       x: plot.x,
-      y: 104,
+      y: tall ? 150 : 104,
       fill: "#52525b",
-      "font-size": 13,
+      "font-size": tall ? 14 : 13,
       "font-family": FONT,
       "font-weight": 650
     }) +
@@ -144,14 +144,15 @@ function renderDashboardBarRace(spec: VisualSpec, theme: VisualTheme, points: Po
 function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, points: Point[]): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const max = maxAbs(points);
   const plot = {
     x: 48,
-    y: 124,
+    y: tall ? 174 : 124,
     width: width - 96,
-    height: height - 186
+    height: height - (tall ? 280 : 186)
   };
-  const row = horizontalRowLayout(plot.height, points.length);
+  const row = horizontalRowLayout(plot.height, points.length, tall);
   const labelWidth = Math.min(156, Math.max(86, longestLabelWidth(points, row.labelSize) + 8));
   const valueWidth = Math.max(56, maxValueWidth(points, row.valueSize) + 10);
   const barX = plot.x + labelWidth + 18;
@@ -164,9 +165,7 @@ function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, poin
       const barY = centerY - row.barHeight / 2;
       const targetWidth = Math.max(4, (Math.max(0, point.value) / max) * barWidth);
       const delay = stagger(index, spec.motion.delayMs, Math.max(32, Math.min(72, spec.motion.staggerMs)));
-      const accent = theme.accent ?? theme.palette[0];
-      const color = accent;
-      const opacity = index === 0 ? 1 : 0.7;
+      const color = theme.palette[index % theme.palette.length] ?? theme.accent;
 
       return group(
         textNode(fitText(point.label, labelWidth, row.labelSize), {
@@ -192,8 +191,7 @@ function renderDashboardHorizontalBar(spec: VisualSpec, theme: VisualTheme, poin
               width: Number(targetWidth.toFixed(2)),
               height: Number(row.barHeight.toFixed(2)),
               rx: Number((row.barHeight / 2).toFixed(2)),
-              fill: color,
-              opacity
+              fill: color
             },
             animate("width", 0, Number(targetWidth.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
           ) +
@@ -219,12 +217,12 @@ function orderedPoints(points: Point[], ranking: boolean): Point[] {
   return [...points].sort((a, b) => b.value - a.value);
 }
 
-function horizontalRowLayout(plotHeight: number, count: number) {
+function horizontalRowLayout(plotHeight: number, count: number, tall = false) {
   const safeCount = Math.max(1, count);
-  const step = Math.min(46, Math.max(15, plotHeight / safeCount));
-  const barHeight = Math.max(safeCount > 80 ? 2 : 5, Math.min(16, step * 0.38));
-  const labelSize = Math.max(9, Math.min(15, safeCount > 28 ? 10 : safeCount > 14 ? 12 : 14));
-  const valueSize = Math.max(9, Math.min(14, labelSize));
+  const step = Math.min(tall ? 58 : 46, Math.max(15, plotHeight / safeCount));
+  const barHeight = Math.max(safeCount > 80 ? 2 : 5, Math.min(tall ? 20 : 16, step * (tall ? 0.42 : 0.38)));
+  const labelSize = Math.max(9, Math.min(tall ? 17 : 15, safeCount > 28 ? 10 : safeCount > 14 ? 12 : tall ? 16 : 14));
+  const valueSize = Math.max(9, Math.min(tall ? 15 : 14, labelSize));
   return { step, barHeight, labelSize, valueSize };
 }
 

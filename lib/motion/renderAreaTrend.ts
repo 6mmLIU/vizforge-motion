@@ -15,14 +15,15 @@ type AreaSeries = {
 export function renderAreaTrend(spec: VisualSpec, theme: VisualTheme): string {
   const width = spec.export.width;
   const height = spec.export.height;
+  const tall = height / width > 1.15;
   const series = buildSeries(spec, theme);
   const allPoints = series.flatMap((item) => item.points);
   const maxValue = maxAbs(allPoints);
   const plot = {
     x: 62,
-    y: spec.card?.periodLabel ? 148 : 132,
+    y: tall ? 188 : spec.card?.periodLabel ? 148 : 132,
     width: width - 124,
-    height: Math.max(150, height - (spec.card?.periodLabel ? 240 : 220))
+    height: Math.max(150, height - (tall ? 318 : spec.card?.periodLabel ? 240 : 220))
   };
   const baseY = plot.y + plot.height;
   const periodLabel = spec.card?.periodLabel?.slice(0, 24);

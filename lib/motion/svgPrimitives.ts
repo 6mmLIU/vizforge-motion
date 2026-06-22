@@ -26,8 +26,10 @@ export function tag(name: string, attributes: SvgAttrs = {}, children = ""): str
   return children ? `${open}>${children}</${name}>` : `${open}/>`;
 }
 
-export function svgRoot(options: { width: number; height: number; children: string; background?: string }): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${options.width}" height="${options.height}" viewBox="0 0 ${options.width} ${options.height}" role="img">${options.background ? `<rect x="0" y="0" width="${options.width}" height="${options.height}" fill="${escapeXml(options.background)}"/>` : ""}${options.children}</svg>`;
+export function svgRoot(options: { width: number; height: number; children: string; background?: string; viewBoxWidth?: number; viewBoxHeight?: number }): string {
+  const viewBoxWidth = options.viewBoxWidth ?? options.width;
+  const viewBoxHeight = options.viewBoxHeight ?? options.height;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${options.width}" height="${options.height}" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" role="img">${options.background ? `<rect x="0" y="0" width="${viewBoxWidth}" height="${viewBoxHeight}" fill="${escapeXml(options.background)}"/>` : ""}${options.children}</svg>`;
 }
 
 export function group(children: string, attributes: SvgAttrs = {}): string {

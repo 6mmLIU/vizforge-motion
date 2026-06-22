@@ -53,6 +53,13 @@ function normalizeRenderPayload(input: unknown): unknown {
   const type = stringValue(visual.type) ?? stringValue(input.type) ?? DEFAULT_VISUAL_SPEC.type;
   const story = stringValue(visual.story) ?? stringValue(input.story) ?? DEFAULT_VISUAL_SPEC.story;
   const exportFormat = stringValue(exportConfig.format) ?? DEFAULT_VISUAL_SPEC.export.format;
+  const target = stringValue(exportConfig.target)?.toLowerCase();
+  const targetSize =
+    target === "xiaohongshu" || target === "rednote" || target === "social"
+      ? { width: 1080, height: 1440 }
+      : target === "highres" || target === "poster"
+        ? { width: 1440, height: 1000 }
+        : {};
   const mappings = isRecord(input.mappings)
     ? input.mappings
     : isRecord(visual.mappings)
@@ -80,6 +87,7 @@ function normalizeRenderPayload(input: unknown): unknown {
     },
     export: {
       ...DEFAULT_VISUAL_SPEC.export,
+      ...targetSize,
       ...exportConfig,
       format: exportFormat,
       wechatSafeMode:
