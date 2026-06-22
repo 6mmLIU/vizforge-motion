@@ -23,7 +23,29 @@ describe("renderAnimatedSvg", () => {
     expect(result.svg).toContain('width="1080"');
     expect(result.svg).toContain('height="1440"');
     expect(result.svg).toContain('viewBox="0 0 720 960"');
+    expect(result.svg).toContain('width="88" height="26"');
+    expect(result.svg).toContain('font-size="40"');
+    expect(result.svg).toContain('y="104"');
+    expect(result.compatibility.safe).toBe(true);
+  });
+
+  it("keeps social poster titles legible without crowding the eyebrow label", () => {
+    const result = renderAnimatedSvg({
+      ...DEFAULT_VISUAL_SPEC,
+      title: "小红书投放销售表现复盘与下周增长策略",
+      subtitle: "长标题时副标题让位给主标题",
+      theme: "editorial-light",
+      export: {
+        ...DEFAULT_VISUAL_SPEC.export,
+        width: 1080,
+        height: 1440
+      }
+    });
+
+    expect(result.svg).toContain(">数据快照<");
     expect(result.svg).toContain('font-size="34"');
+    expect(result.svg).toContain('y="100"');
+    expect(result.svg).not.toContain("长标题时副标题让位给主标题");
     expect(result.compatibility.safe).toBe(true);
   });
 

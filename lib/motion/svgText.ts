@@ -7,49 +7,67 @@ export function cardTitle(title: string, subtitle: string | undefined, theme: Vi
   if (theme.id === "editorial-light") {
     const tall = height / width > 1.15;
     const x = tall ? 56 : 40;
-    const y = tall ? 88 : 62;
-    const titleSize = tall ? 34 : theme.typography.title;
-    const titleLines = wrapText(title, width - x * 2 - (tall ? 120 : 180), titleSize, tall ? 2 : 1);
-    const eyebrow = textNode("数据快照", {
-      x,
-      y: tall ? 54 : 34,
-      fill: theme.accent,
-      opacity: 0.82,
-      "font-size": tall ? 10 : 9,
-      "font-family": SVG_FONT,
-      "font-weight": 640
-    });
+    const initialTitleSize = tall ? 40 : theme.typography.title;
+    const titleLines = wrapText(title, width - x * 2 - (tall ? 120 : 180), initialTitleSize, tall ? 2 : 1);
+    const titleSize = tall && titleLines.length > 1 ? 34 : initialTitleSize;
+    const y = tall ? (titleLines.length > 1 ? 100 : 104) : 62;
+    const lineGap = titleSize * (tall ? 1.12 : 1.16);
+    const eyebrowLabel = "数据快照";
+    const eyebrowWidth = tall ? 88 : 72;
+    const eyebrowHeight = tall ? 26 : 20;
+    const eyebrowTop = tall ? 36 : 22;
+    const eyebrow =
+      rect({
+        x,
+        y: eyebrowTop,
+        width: eyebrowWidth,
+        height: eyebrowHeight,
+        rx: eyebrowHeight / 2,
+        fill: "#eaf1ff"
+      }) +
+      textNode(eyebrowLabel, {
+        x: x + eyebrowWidth / 2,
+        y: tall ? 54 : 36,
+        fill: theme.accent,
+        opacity: 0.92,
+        "font-size": tall ? 12 : 10,
+        "font-family": SVG_FONT,
+        "font-weight": 720,
+        "text-anchor": "middle"
+      });
     const titleNode = titleLines
       .map((line, index) =>
         textNode(line, {
           x,
-          y: y + index * titleSize * 1.16,
+          y: y + index * lineGap,
           fill: theme.text,
           "font-size": titleSize,
           "font-family": SVG_FONT,
-          "font-weight": 620
+          "font-weight": tall ? 760 : 680
         })
       )
       .join("");
-    const subtitleY = y + Math.max(1, titleLines.length) * titleSize * 1.12 + (tall ? 16 : 8);
-    const subtitleNode = subtitle
+    const subtitleY = y + Math.max(1, titleLines.length) * titleSize * 1.04 + (tall ? 16 : 8);
+    const subtitleNode = subtitle && !(tall && titleLines.length > 1)
       ? textNode(subtitle, {
           x,
           y: Number(subtitleY.toFixed(2)),
           fill: "#7b8496",
-          "font-size": tall ? 14 : theme.typography.subtitle,
+          "font-size": tall ? 15 : theme.typography.subtitle,
           "font-family": SVG_FONT,
           "font-weight": 420
         })
       : "";
-    const accentRule = rect({
-      x,
-      y: tall ? 64 : 44,
-      width: tall ? 42 : 34,
-      height: tall ? 3 : 3,
-      rx: 2,
-      fill: theme.accent
-    });
+    const accentRule = !tall
+      ? rect({
+          x,
+          y: 44,
+          width: 34,
+          height: 3,
+          rx: 2,
+          fill: theme.accent
+        })
+      : "";
 
     return eyebrow + accentRule + titleNode + subtitleNode;
   }
