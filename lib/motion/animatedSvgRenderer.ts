@@ -1,20 +1,16 @@
 import { baseDefs } from "@/lib/motion/svgGradients";
-import { chartFrame } from "@/lib/motion/renderUtils";
-import { renderAnimatedBar } from "@/lib/motion/renderAnimatedBar";
-import { renderAnimatedHorizontalBar } from "@/lib/motion/renderAnimatedHorizontalBar";
-import { renderAreaTrend } from "@/lib/motion/renderAreaTrend";
-import { renderDonutSweep } from "@/lib/motion/renderDonutSweep";
+import { footer, frame, geom, header, type Geom } from "@/lib/motion/layout";
+import { renderBar, renderStackedBar } from "@/lib/motion/renderAnimatedBar";
+import { renderHorizontalBar } from "@/lib/motion/renderAnimatedHorizontalBar";
+import { renderArea } from "@/lib/motion/renderAreaTrend";
+import { renderDonut } from "@/lib/motion/renderDonutSweep";
 import { renderHeatmap } from "@/lib/motion/renderHeatmap";
-import { renderLineDraw } from "@/lib/motion/renderLineDraw";
+import { renderLine } from "@/lib/motion/renderLineDraw";
 import { renderMetricCard } from "@/lib/motion/renderMetricCard";
-import { renderNetwork } from "@/lib/motion/renderNetwork";
-import { renderRadar } from "@/lib/motion/renderRadar";
-import { renderRoseBloom } from "@/lib/motion/renderRoseBloom";
-import { renderSankey } from "@/lib/motion/renderSankey";
-import { renderScatterBubble } from "@/lib/motion/renderScatterBubble";
+import { renderRose } from "@/lib/motion/renderRoseBloom";
+import { renderScatter } from "@/lib/motion/renderScatterBubble";
 import { renderTreemap } from "@/lib/motion/renderTreemap";
-import { animate, circle, group, rect, svgRoot, textNode } from "@/lib/motion/svgPrimitives";
-import { cardTitle, footerText } from "@/lib/motion/svgText";
+import { svgRoot } from "@/lib/motion/svgPrimitives";
 import { validateWechatSvg, type WeChatCompatibilityResult } from "@/lib/wechat/validateWechatSvg";
 import { resolvePaletteForSpec, resolveVisualItemCount } from "@/lib/visual/autoPalette";
 import { getTheme, type VisualTheme } from "@/lib/visual/themes";
@@ -37,9 +33,9 @@ type RenderCanvas = {
 const LIMITS: Partial<Record<VisualType, number>> = {
   bar: 200,
   "horizontal-bar": 200,
+  "stacked-bar": 200,
   donut: 200,
   pie: 200,
-  arc: 200,
   rose: 200,
   line: 200,
   area: 200,
@@ -47,111 +43,48 @@ const LIMITS: Partial<Record<VisualType, number>> = {
   scatter: 200,
   bubble: 200,
   heatmap: 400,
-  treemap: 200,
-  radar: 200,
-  sankey: 200,
-  network: 200
+  treemap: 200
 };
-const AGGREGATED_LIMIT_TYPES: VisualType[] = ["donut", "pie", "arc", "rose", "gauge", "treemap"];
+const AGGREGATED_LIMIT_TYPES: VisualType[] = ["donut", "pie", "rose", "treemap"];
 
 function limitWarnings(spec: VisualSpec): string[] {
   const warnings: string[] = [];
   const maxRows = LIMITS[spec.type] ?? 200;
   const visualItems = AGGREGATED_LIMIT_TYPES.includes(spec.type) ? resolveVisualItemCount(spec) : spec.data.rows.length;
   if (visualItems > maxRows) {
-    warnings.push(`Animated SVG supports up to ${maxRows} visual items; this render uses the first safe slice after field mapping.`);
+    warnings.push(`当前类型最多渲染 ${maxRows} 个可视项，超出部分已按安全切片处理。`);
   }
   return warnings;
 }
 
-function fallbackVisual(spec: VisualSpec) {
-  const theme = getTheme(spec.theme);
-  const width = spec.export.width;
-  const height = spec.export.height;
-  const cells = Array.from({ length: 28 }, (_, index) => {
-    const col = index % 7;
-    const row = Math.floor(index / 7);
-    return rect(
-      {
-        x: 96 + col * 108,
-        y: 152 + row * 52,
-        width: 72,
-        height: 28,
-        rx: 8,
-        fill: theme.palette[index % theme.palette.length],
-        opacity: 0
-      },
-      animate("opacity", 0, 0.72, 360, 80 + index * 24, { easing: "ease-out" })
-    );
-  }).join("");
-
-  return group(
-    cells +
-      circle({ cx: width - 112, cy: height - 112, r: 52, fill: theme.accent, opacity: 0.1 }) +
-      textNode(`${spec.type} preview`, {
-        x: 96,
-        y: height - 132,
-        fill: theme.text,
-        "font-size": 24,
-        "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
-        "font-weight": 760
-      }) +
-      textNode("Static-safe placeholder. Animated renderer can be extended without changing the API contract.", {
-        x: 96,
-        y: height - 102,
-        fill: theme.muted,
-        "font-size": 14,
-        "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif"
-      })
-  );
-}
-
-function bodyForSpec(spec: VisualSpec): { body: string; warnings: string[] } {
-  const theme = themeForSpec(spec);
+function bodyForSpec(spec: VisualSpec, theme: VisualTheme, g: Geom): string {
   switch (spec.type) {
     case "bar":
-    case "grouped-bar":
+      return renderBar(spec, theme, g);
     case "stacked-bar":
-    case "waterfall":
-      return { body: renderAnimatedBar(spec, theme), warnings: [] };
-    case "ranking":
-      return { body: renderAnimatedHorizontalBar(spec, theme), warnings: [] };
+      return renderStackedBar(spec, theme, g);
     case "horizontal-bar":
-      return { body: renderAnimatedHorizontalBar(spec, theme), warnings: [] };
-    case "bar-race":
-      return { body: renderAnimatedHorizontalBar(spec, theme), warnings: ["bar-race currently renders as a horizontal growth preview without time slider."] };
+      return renderHorizontalBar(spec, theme, g);
+    case "line":
+      return renderLine(spec, theme, g);
+    case "area":
+      return renderArea(spec, theme, g);
     case "donut":
     case "pie":
-    case "arc":
-    case "gauge":
-      return { body: renderDonutSweep(spec, theme), warnings: [] };
-    case "area":
-      return { body: renderAreaTrend(spec, theme), warnings: [] };
-    case "line":
-    case "timeline":
-    case "slope":
-    case "bump":
-    case "line-race":
-      return { body: renderLineDraw(spec, theme), warnings: [] };
-    case "metric-card":
-      return { body: renderMetricCard(spec, theme), warnings: [] };
+      return renderDonut(spec, theme, g);
     case "rose":
-      return { body: renderRoseBloom(spec, theme), warnings: [] };
+      return renderRose(spec, theme, g);
+    case "treemap":
+      return renderTreemap(spec, theme, g);
     case "scatter":
     case "bubble":
-      return { body: renderScatterBubble(spec, theme), warnings: [] };
+      return renderScatter(spec, theme, g);
     case "heatmap":
-      return { body: renderHeatmap(spec, theme), warnings: [] };
-    case "treemap":
-      return { body: renderTreemap(spec, theme), warnings: [] };
-    case "radar":
-      return { body: renderRadar(spec, theme), warnings: [] };
-    case "sankey":
-      return { body: renderSankey(spec, theme), warnings: [] };
-    case "network":
-      return { body: renderNetwork(spec, theme), warnings: [] };
+      return renderHeatmap(spec, theme, g);
+    case "metric-card":
+      return renderMetricCard(spec, theme, g);
     default:
-      return { body: fallbackVisual(spec), warnings: [`${spec.type} is rendered as a safe static placeholder in this build.`] };
+      return renderBar(spec, theme, g);
   }
 }
 
@@ -163,7 +96,7 @@ export function renderAnimatedSvg(input: VisualSpec): AnimatedSvgRenderResult {
 
   const spec = parsed.data;
   const canvas = resolveRenderCanvas(spec.export.width, spec.export.height);
-  const renderSpec = {
+  const renderSpec: VisualSpec = {
     ...spec,
     export: {
       ...spec.export,
@@ -172,16 +105,15 @@ export function renderAnimatedSvg(input: VisualSpec): AnimatedSvgRenderResult {
     }
   };
   const theme = themeForSpec(renderSpec);
+  const g = geom(renderSpec);
   const warnings = limitWarnings(spec);
-  const body = bodyForSpec(renderSpec);
-  warnings.push(...body.warnings);
 
   const children =
     baseDefs(theme) +
-    chartFrame(canvas.logicalWidth, canvas.logicalHeight, theme) +
-    cardTitle(spec.title, spec.subtitle, theme, canvas.logicalWidth, canvas.logicalHeight) +
-    body.body +
-    footerText(spec.caption ?? spec.insight, spec.source, theme, canvas.logicalWidth, canvas.logicalHeight);
+    frame(theme, g) +
+    header(renderSpec, theme, g) +
+    bodyForSpec(renderSpec, theme, g) +
+    footer(renderSpec, theme, g);
 
   const svg = svgRoot({
     width: canvas.physicalWidth,
@@ -221,14 +153,11 @@ function resolveRenderCanvas(width: number, height: number): RenderCanvas {
     return { physicalWidth, physicalHeight, logicalWidth: width, logicalHeight: height };
   }
 
-  let baseWidth = 720;
+  let baseWidth = 760;
   let baseHeight = Math.round(baseWidth / aspect);
 
   if (aspect >= 2.2) {
-    baseWidth = 960;
-    baseHeight = Math.round(baseWidth / aspect);
-  } else if (aspect <= 0.9) {
-    baseWidth = 720;
+    baseWidth = 980;
     baseHeight = Math.round(baseWidth / aspect);
   } else {
     baseHeight = Math.round(baseWidth / aspect);

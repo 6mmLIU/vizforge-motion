@@ -1,172 +1,120 @@
 import { animate, group, rect, textNode } from "@/lib/motion/svgPrimitives";
-import { extractAggregatedPoints, totalPositive } from "@/lib/motion/renderUtils";
+import { extractAggregatedPoints, totalPositive, type Point } from "@/lib/motion/renderUtils";
 import { stagger } from "@/lib/motion/timeline";
+import { FONT, clamp, colorFor, formatNumber, readableOn, round, type Geom, type Rect } from "@/lib/motion/layout";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-type TreemapItem = {
-  point: ReturnType<typeof extractAggregatedPoints>[number];
-  index: number;
-};
+type Item = { point: Point; index: number };
+type Tile = Item & Rect;
 
-type TreemapTile = TreemapItem & {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-const FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
-
-export function renderTreemap(spec: VisualSpec, theme: VisualTheme): string {
+export function renderTreemap(spec: VisualSpec, theme: VisualTheme, g: Geom): string {
   const points = extractAggregatedPoints(spec, 28)
     .map((point) => ({ ...point, value: Math.max(0, point.value) }))
     .sort((a, b) => b.value - a.value);
   const total = totalPositive(points);
-  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
-  const plot = {
-    x: tall ? 58 : 66,
-    y: tall ? 220 : 132,
-    width: spec.export.width - (tall ? 116 : 132),
-    height: spec.export.height - (tall ? 420 : 228)
-  };
-  const tiles = layoutTreemap(
-    points.map((point, index) => ({ point, index })),
-    plot
+  const tiles = layout(points.map((point, index) => ({ point, index })), g.plot);
+  const gap = round(6 * g.s);
+
+  return group(
+    tiles
+      .map((tile) => {
+        const x = tile.x + gap / 2;
+        const y = tile.y + gap / 2;
+        const width = Math.max(0, tile.width - gap);
+        const height = Math.max(0, tile.height - gap);
+        if (width < 10 || height < 10) return "";
+        const color = colorFor(theme, tile.index);
+        const ink = readableOn(color);
+        const share = tile.point.value / total;
+        const delay = stagger(tile.index, spec.motion.delayMs, 48);
+        const labelFits = width >= 70 && height >= 46;
+        const valueFits = width >= 88 && height >= 66;
+        const labelSize = Math.round(clamp(width / (tile.point.label.length * 0.72 + 2), 11, 20 * g.s));
+        const valueSize = Math.round(clamp(Math.min(width / 4.6, height / 4), 14, 28 * g.s));
+        return group(
+          rect(
+            {
+              x: round(x),
+              y: round(y),
+              width: round(width),
+              height: round(height),
+              rx: round(12 * g.s),
+              fill: color,
+              opacity: 0.94
+            },
+            animate("width", 0, round(width), spec.motion.durationMs, delay, spec.motion)
+          ) +
+            (labelFits
+              ? textNode(tile.point.label.slice(0, width > 160 ? 18 : 10), {
+                  x: round(x + round(14 * g.s)),
+                  y: round(y + round(26 * g.s)),
+                  fill: ink,
+                  "font-size": labelSize,
+                  "font-family": FONT,
+                  "font-weight": 740
+                })
+              : "") +
+            (valueFits
+              ? textNode(formatNumber(tile.point.value), {
+                  x: round(x + round(14 * g.s)),
+                  y: round(y + height - round(16 * g.s)),
+                  fill: ink,
+                  "font-size": valueSize,
+                  "font-family": FONT,
+                  "font-weight": 780
+                })
+              : "") +
+            (valueFits
+              ? textNode(`${Math.round(share * 100)}%`, {
+                  x: round(x + width - round(14 * g.s)),
+                  y: round(y + height - round(16 * g.s)),
+                  fill: ink,
+                  "font-size": Math.round(12 * g.s),
+                  "font-family": FONT,
+                  "font-weight": 680,
+                  "text-anchor": "end",
+                  opacity: 0.82
+                })
+              : "")
+        );
+      })
+      .join("")
   );
-
-  const tileNodes = tiles
-    .map((tile) => {
-      const gap = tall ? 7 : 5;
-      const x = tile.x + gap / 2;
-      const y = tile.y + gap / 2;
-      const width = Math.max(0, tile.width - gap);
-      const height = Math.max(0, tile.height - gap);
-      if (width < 8 || height < 8) return "";
-
-      const point = tile.point;
-      const share = point.value / total;
-      const color = theme.palette[tile.index % theme.palette.length];
-      const delay = stagger(tile.index, spec.motion.delayMs, 46);
-      const labelFits = width >= (tall ? 78 : 64) && height >= (tall ? 62 : 48);
-      const valueFits = width >= (tall ? 96 : 82) && height >= (tall ? 92 : 68);
-      const labelSize = Math.max(tall ? 14 : 11, Math.min(tall ? 22 : 16, width / (point.label.length * 0.74 + 2)));
-      const valueSize = Math.max(tall ? 18 : 14, Math.min(tall ? 30 : 22, Math.min(width / 4.8, height / 4.2)));
-      const textColor = readableText(color);
-
-      return group(
-        rect(
-          {
-            x,
-            y,
-            width: Number(width.toFixed(2)),
-            height: Number(height.toFixed(2)),
-            rx: tall ? 16 : 11,
-            fill: color,
-            opacity: 0.88,
-            stroke: theme.background,
-            "stroke-width": tall ? 1.4 : 1
-          },
-          animate("width", 0, Number(width.toFixed(2)), spec.motion.durationMs, delay, spec.motion)
-        ) +
-          (labelFits
-            ? textNode(point.label.slice(0, width > 150 ? 18 : 10), {
-                x: x + (tall ? 16 : 12),
-                y: y + (tall ? 29 : 23),
-                fill: textColor,
-                "font-size": Number(labelSize.toFixed(1)),
-                "font-family": FONT,
-                "font-weight": 760
-              })
-            : "") +
-          (valueFits
-            ? textNode(formatNumber(point.value), {
-                x: x + (tall ? 16 : 12),
-                y: y + height - (tall ? 24 : 18),
-                fill: textColor,
-                "font-size": Number(valueSize.toFixed(1)),
-                "font-family": FONT,
-                "font-weight": 780
-              })
-            : "") +
-          (valueFits
-            ? textNode(`${Math.round(share * 100)}%`, {
-                x: x + width - (tall ? 16 : 12),
-                y: y + height - (tall ? 25 : 18),
-                fill: textColor,
-                "font-size": tall ? 14 : 11,
-                "font-family": FONT,
-                "font-weight": 680,
-                "text-anchor": "end",
-                opacity: 0.8
-              })
-            : "")
-      );
-    })
-    .join("");
-
-  return group(tileNodes);
 }
 
-function layoutTreemap(items: TreemapItem[], rectBox: { x: number; y: number; width: number; height: number }): TreemapTile[] {
+function layout(items: Item[], box: Rect): Tile[] {
   if (!items.length) return [];
-  if (items.length === 1) return [{ ...items[0], ...rectBox }];
-
-  const total = sumValues(items);
+  if (items.length === 1) return [{ ...items[0], ...box }];
+  const total = sum(items);
   let running = 0;
   let splitIndex = 1;
-  let bestDistance = Number.POSITIVE_INFINITY;
-
+  let best = Number.POSITIVE_INFINITY;
   for (let index = 0; index < items.length - 1; index += 1) {
     running += Math.max(0, items[index].point.value);
     const distance = Math.abs(total / 2 - running);
-    if (distance < bestDistance) {
-      bestDistance = distance;
+    if (distance < best) {
+      best = distance;
       splitIndex = index + 1;
     }
   }
-
   const first = items.slice(0, splitIndex);
   const second = items.slice(splitIndex);
-  const firstRatio = sumValues(first) / total;
-
-  if (rectBox.width >= rectBox.height) {
-    const firstWidth = rectBox.width * firstRatio;
+  const firstRatio = sum(first) / total;
+  if (box.width >= box.height) {
+    const firstWidth = box.width * firstRatio;
     return [
-      ...layoutTreemap(first, { ...rectBox, width: firstWidth }),
-      ...layoutTreemap(second, { x: rectBox.x + firstWidth, y: rectBox.y, width: rectBox.width - firstWidth, height: rectBox.height })
+      ...layout(first, { ...box, width: firstWidth }),
+      ...layout(second, { x: box.x + firstWidth, y: box.y, width: box.width - firstWidth, height: box.height })
     ];
   }
-
-  const firstHeight = rectBox.height * firstRatio;
+  const firstHeight = box.height * firstRatio;
   return [
-    ...layoutTreemap(first, { ...rectBox, height: firstHeight }),
-    ...layoutTreemap(second, { x: rectBox.x, y: rectBox.y + firstHeight, width: rectBox.width, height: rectBox.height - firstHeight })
+    ...layout(first, { ...box, height: firstHeight }),
+    ...layout(second, { x: box.x, y: box.y + firstHeight, width: box.width, height: box.height - firstHeight })
   ];
 }
 
-function sumValues(items: TreemapItem[]) {
-  const total = items.reduce((sum, item) => sum + Math.max(0, item.point.value), 0);
-  return total || 1;
-}
-
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? value.toLocaleString("zh-CN") : value.toLocaleString("zh-CN", { maximumFractionDigits: 1 });
-}
-
-function readableText(hex: string): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return "#ffffff";
-  const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
-  return luminance > 0.62 ? "#0f172a" : "#ffffff";
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const value = hex.trim().replace(/^#/, "");
-  if (value.length !== 6) return null;
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  if ([r, g, b].some(Number.isNaN)) return null;
-  return { r, g, b };
+function sum(items: Item[]): number {
+  return items.reduce((acc, item) => acc + Math.max(0, item.point.value), 0) || 1;
 }

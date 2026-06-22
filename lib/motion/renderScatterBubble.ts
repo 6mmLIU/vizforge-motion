@@ -1,7 +1,8 @@
 import { coerceNumber } from "@/lib/data/inferSchema";
 import { animate, animateTransform, circle, group, line, textNode } from "@/lib/motion/svgPrimitives";
-import { gridLines, resolveFields } from "@/lib/motion/renderUtils";
+import { resolveFields } from "@/lib/motion/renderUtils";
 import { stagger } from "@/lib/motion/timeline";
+import { FONT, axisLabel, clamp, colorFor, niceTicks, round, yAxisGrid, type Geom, type Rect } from "@/lib/motion/layout";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
@@ -10,7 +11,7 @@ function scale(value: number, min: number, max: number, start: number, size: num
   return start + ((value - min) / (max - min)) * size;
 }
 
-export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): string {
+export function renderScatter(spec: VisualSpec, theme: VisualTheme, g: Geom): string {
   const fields = resolveFields(spec);
   const rows = spec.data.rows.slice(0, 200);
   const xField = spec.mappings?.x ?? fields.category;
@@ -18,7 +19,7 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
   const xAxis = resolveXAxis(rows.map((row, index) => ({ value: row[xField], index })));
   const points = rows
     .map((row, index) => ({
-      label: String(row[fields.category] ?? `Point ${index + 1}`),
+      label: String(row[fields.category] ?? `点 ${index + 1}`),
       x: xAxis.values[index] ?? index,
       y: coerceNumber(row[yField]) ?? coerceNumber(row[fields.value]) ?? 0,
       size: coerceNumber(row[fields.value]) ?? 1
@@ -26,55 +27,65 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
     .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
   if (!points.length) return "";
 
-  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
-  const plot = {
-    x: tall ? 68 : 76,
-    y: tall ? 224 : 132,
-    width: spec.export.width - (tall ? 136 : 152),
-    height: spec.export.height - (tall ? 384 : 232)
+  const leftAxis = round(clamp(40 * g.s, 32, 54));
+  const labelBand = round(34 * g.s);
+  const plot: Rect = {
+    x: g.plot.x + leftAxis,
+    y: g.plot.y + 10,
+    width: g.plot.width - leftAxis,
+    height: g.plot.height - labelBand - 10
   };
-  const xValues = points.map((point) => point.x);
+
   const yValues = points.map((point) => point.y);
   const sizeValues = points.map((point) => Math.abs(point.size));
-  const rawMinX = Math.min(...xValues);
-  const rawMaxX = Math.max(...xValues);
+  const rawMinX = Math.min(...points.map((p) => p.x));
+  const rawMaxX = Math.max(...points.map((p) => p.x));
   const minX = xAxis.includeZero ? Math.min(rawMinX, 0) : rawMinX;
-  const maxX = rawMaxX === rawMinX ? rawMaxX + 1 : xAxis.includeZero ? Math.max(rawMaxX, 1) : rawMaxX;
-  const minY = Math.min(...yValues, 0);
+  const maxX = rawMaxX === rawMinX ? rawMaxX + 1 : rawMaxX;
   const maxY = Math.max(...yValues, 1);
   const maxSize = Math.max(...sizeValues, 1);
+  const { ticks, max: tickMax } = niceTicks(maxY);
   const labelIndices = resolveLabelIndices(points);
+
+  const grid = yAxisGrid(plot, theme, ticks, tickMax, g);
+  const axisFrame = line({
+    x1: plot.x,
+    x2: plot.x + plot.width,
+    y1: round(plot.y + plot.height),
+    y2: round(plot.y + plot.height),
+    stroke: theme.axis,
+    "stroke-width": 1.2
+  });
 
   const circles = points
     .map((point, index) => {
       const x = scale(point.x, minX, maxX, plot.x, plot.width);
-      const y = plot.y + plot.height - scale(point.y, minY, maxY, 0, plot.height);
-      const radius = spec.type === "bubble" ? 8 + (Math.abs(point.size) / maxSize) * (tall ? 34 : 22) : tall ? 11 : 7;
-      const delay = stagger(index, spec.motion.delayMs, Math.max(18, spec.motion.staggerMs * 0.3));
-      const labelAbsoluteX = clamp(x + radius + 10, plot.x + 10, plot.x + plot.width - 10);
-      const labelX = labelAbsoluteX - x;
-      const labelAnchor = labelX <= 0 ? "end" : "start";
+      const y = plot.y + plot.height - (Math.max(0, point.y) / tickMax) * plot.height;
+      const radius = spec.type === "bubble" ? 8 + (Math.abs(point.size) / maxSize) * (g.tall ? 32 : 22) : g.tall ? 9 : 7;
+      const delay = stagger(index, spec.motion.delayMs, Math.max(16, spec.motion.staggerMs * 0.3));
       const showLabel = labelIndices.has(index);
+      const labelX = clamp(x + radius + 8, plot.x + 8, plot.x + plot.width - 8) - x;
+      const anchor = labelX <= 0 ? "end" : "start";
       return group(
         group(
           circle({
             cx: 0,
             cy: 0,
-            r: Number(radius.toFixed(2)),
-            fill: theme.palette[index % theme.palette.length],
-            opacity: 0.82,
-            stroke: theme.background,
+            r: round(radius),
+            fill: colorFor(theme, index),
+            opacity: spec.type === "bubble" ? 0.78 : 0.88,
+            stroke: theme.surface,
             "stroke-width": 2
           }) +
             (showLabel
               ? textNode(point.label.slice(0, 10), {
-                  x: Number(labelX.toFixed(2)),
-                  y: Number((radius > 16 ? radius + 8 : -radius - 8).toFixed(2)),
+                  x: round(labelX),
+                  y: round(radius > 16 ? radius + 8 : -radius - 7),
                   fill: theme.text,
-                  "font-size": tall ? 14 : 11,
-                  "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif",
-                  "font-weight": 680,
-                  "text-anchor": labelAnchor
+                  "font-size": Math.round((g.tall ? 13 : 11.5) * g.s),
+                  "font-family": FONT,
+                  "font-weight": 640,
+                  "text-anchor": anchor
                 })
               : "") +
             animateTransform("scale", 0, 1, spec.motion.durationMs, delay, spec.motion),
@@ -85,49 +96,18 @@ export function renderScatterBubble(spec: VisualSpec, theme: VisualTheme): strin
     })
     .join("");
 
-  const axes =
-    textNode(xAxis.startLabel, { x: plot.x, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif" }) +
-    textNode(xAxis.endLabel, { x: plot.x + plot.width, y: plot.y + plot.height + 24, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" }) +
-    textNode(String(maxY), { x: plot.x - 10, y: plot.y + 4, fill: theme.muted, "font-size": 12, "font-family": "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif", "text-anchor": "end" });
+  const xLabels =
+    axisLabel(xAxis.startLabel, plot.x, plot.y + plot.height + round(26 * g.s), theme, g, "start") +
+    axisLabel(xAxis.endLabel, plot.x + plot.width, plot.y + plot.height + round(26 * g.s), theme, g, "end");
 
-  const axisColor = theme.id === "editorial-light" ? "#dbe3ee" : theme.text;
-  const axisOpacity = theme.id === "editorial-light" ? 1 : theme.axisOpacity;
-  const axesFrame =
-    line({
-      x1: plot.x,
-      x2: plot.x + plot.width,
-      y1: plot.y + plot.height,
-      y2: plot.y + plot.height,
-      stroke: axisColor,
-      "stroke-width": theme.id === "editorial-light" ? 1.3 : 1,
-      opacity: axisOpacity
-    }) +
-    line({
-      x1: plot.x,
-      x2: plot.x,
-      y1: plot.y,
-      y2: plot.y + plot.height,
-      stroke: axisColor,
-      "stroke-width": theme.id === "editorial-light" ? 1.3 : 1,
-      opacity: axisOpacity
-    });
-
-  return gridLines(plot, theme) + axesFrame + circles + axes;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
+  return grid + axisFrame + circles + xLabels;
 }
 
 function resolveLabelIndices(points: Array<{ y: number }>): Set<number> {
   if (points.length <= 8) return new Set(points.map((_, index) => index));
-
   const indices = new Set<number>([0, points.length - 1]);
   const step = Math.ceil(points.length / 5);
-  for (let index = 0; index < points.length; index += step) {
-    indices.add(index);
-  }
-
+  for (let index = 0; index < points.length; index += step) indices.add(index);
   let maxIndex = 0;
   let minIndex = 0;
   points.forEach((point, index) => {
@@ -140,29 +120,27 @@ function resolveLabelIndices(points: Array<{ y: number }>): Set<number> {
 }
 
 function resolveXAxis(items: Array<{ value: unknown; index: number }>) {
-  const strictNumbers = items.map((item) => strictNumber(item.value));
-  const numericCount = strictNumbers.filter((value): value is number => value !== null).length;
+  const numbers = items.map((item) => strictNumber(item.value));
+  const numericCount = numbers.filter((value): value is number => value !== null).length;
   if (numericCount >= Math.max(2, Math.ceil(items.length * 0.7))) {
+    const present = numbers.filter((value): value is number => value !== null);
     return {
-      values: strictNumbers.map((value, index) => value ?? index),
-      startLabel: formatAxisValue(Math.min(...strictNumbers.filter((value): value is number => value !== null))),
-      endLabel: formatAxisValue(Math.max(...strictNumbers.filter((value): value is number => value !== null))),
+      values: numbers.map((value, index) => value ?? index),
+      startLabel: formatAxisValue(Math.min(...present)),
+      endLabel: formatAxisValue(Math.max(...present)),
       includeZero: true
     };
   }
-
   const dates = items.map((item) => parseDateValue(item.value));
   const dateCount = dates.filter((value): value is number => value !== null).length;
   if (dateCount >= Math.max(2, Math.ceil(items.length * 0.7))) {
-    const values = dates.map((value, index) => value ?? index);
     return {
-      values,
+      values: dates.map((value, index) => value ?? index),
       startLabel: labelForAxis(items[0]?.value, "起点"),
       endLabel: labelForAxis(items[items.length - 1]?.value, "终点"),
       includeZero: false
     };
   }
-
   return {
     values: items.map((item) => item.index),
     startLabel: labelForAxis(items[0]?.value, "起点"),
@@ -195,5 +173,5 @@ function labelForAxis(value: unknown, fallback: string) {
 }
 
 function formatAxisValue(value: number) {
-  return Number.isInteger(value) ? value.toLocaleString("zh-CN") : value.toLocaleString("zh-CN", { maximumFractionDigits: 1 });
+  return Number.isInteger(value) ? value.toLocaleString("en-US") : value.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }

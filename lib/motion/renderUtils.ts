@@ -1,95 +1,11 @@
 import { coerceNumber } from "@/lib/data/inferSchema";
-import { rect, tag } from "@/lib/motion/svgPrimitives";
 import type { DataRow, FieldMapping, VisualSpec } from "@/lib/visual/visualSpec";
-import type { VisualTheme } from "@/lib/visual/themes";
 
 export type Point = {
   label: string;
   value: number;
   raw: DataRow;
 };
-
-export function chartFrame(width: number, height: number, theme: VisualTheme): string {
-  if (theme.id === "editorial-light") {
-    const tall = height / width > 1.15;
-    const inset = tall ? 22 : 16;
-    const radius = tall ? 34 : 24;
-    const headerHeight = tall ? 148 : Math.min(112, height * 0.16);
-    return rect({
-      x: inset,
-      y: inset,
-      width: width - inset * 2,
-      height: height - inset * 2,
-      rx: radius,
-      fill: theme.surface,
-      stroke: theme.border,
-      "stroke-width": 0.8
-    }) +
-      rect({
-        x: inset + 1,
-        y: inset + 1,
-        width: width - inset * 2 - 2,
-        height: headerHeight,
-        rx: radius - 1,
-        fill: "#f8fafc",
-        opacity: 0.82
-      }) +
-      rect({
-        x: inset + 28,
-        y: inset + headerHeight + 1,
-        width: width - inset * 2 - 56,
-        height: 1,
-        rx: 1,
-        fill: "#edf2f7",
-        opacity: tall ? 0.8 : 0.5
-      });
-  }
-
-  const inset = rect({
-    x: 28,
-    y: 22,
-    width: width - 56,
-    height: height - 44,
-    rx: 24,
-    fill: theme.surface,
-    stroke: theme.border,
-    "stroke-width": 1.2,
-    opacity: 0.94
-  });
-
-  const glow = theme.glow
-    ? rect({
-        x: 0,
-        y: 0,
-        width,
-        height,
-        fill: "url(#vizforgeGlow)",
-        opacity: 0.55
-      })
-    : "";
-
-  return glow + inset;
-}
-
-export function gridLines(plot: { x: number; y: number; width: number; height: number }, theme: VisualTheme): string {
-  const lines: string[] = [];
-  for (let index = 0; index <= 4; index += 1) {
-    const y = plot.y + (plot.height / 4) * index;
-    const dashboard = theme.id === "editorial-light";
-    lines.push(
-      tag("line", {
-        x1: plot.x,
-        x2: plot.x + plot.width,
-        y1: Number(y.toFixed(2)),
-        y2: Number(y.toFixed(2)),
-        stroke: dashboard ? "#edf1f6" : theme.text,
-        "stroke-width": dashboard ? 0.9 : 1,
-        opacity: dashboard ? 1 : theme.gridOpacity
-      })
-    );
-  }
-  return lines.join("");
-}
 
 export function resolveFields(spec: VisualSpec): Required<Pick<FieldMapping, "category" | "value">> & FieldMapping {
   const rows = spec.data.rows;

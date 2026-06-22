@@ -1,32 +1,19 @@
 import { z } from "zod";
 
 export const VISUAL_TYPES = [
-  "line",
-  "area",
   "bar",
   "horizontal-bar",
   "stacked-bar",
-  "grouped-bar",
-  "pie",
+  "line",
+  "area",
   "donut",
-  "arc",
+  "pie",
   "rose",
+  "treemap",
   "scatter",
   "bubble",
   "heatmap",
-  "treemap",
-  "radar",
-  "gauge",
-  "metric-card",
-  "ranking",
-  "bar-race",
-  "line-race",
-  "slope",
-  "bump",
-  "waterfall",
-  "sankey",
-  "network",
-  "timeline"
+  "metric-card"
 ] as const;
 
 export const VISUAL_STORIES = [
@@ -36,22 +23,10 @@ export const VISUAL_STORIES = [
   "ranking",
   "correlation",
   "distribution",
-  "flow",
-  "spatial",
-  "deviation",
   "single-metric"
 ] as const;
 
-export const THEME_IDS = [
-  "aurora-dark",
-  "cyber-neon",
-  "glass-finance",
-  "editorial-light",
-  "minimal-ink",
-  "warm-paper",
-  "ocean-gradient",
-  "violet-pulse"
-] as const;
+export const THEME_IDS = ["light", "dark", "warm", "mono"] as const;
 
 export const MOTION_PRESETS = [
   "none",
@@ -223,8 +198,8 @@ export const MotionSpecSchema = z.object({
 export const ExportSpecSchema = z.object({
   format: z.enum(EXPORT_FORMATS).default("animated-svg"),
   wechatSafeMode: z.boolean().default(true),
-  width: z.number().int().min(320).max(2400).default(720),
-  height: z.number().int().min(240).max(1800).default(500),
+  width: z.number().int().min(320).max(2400).default(1080),
+  height: z.number().int().min(240).max(1800).default(1350),
   pixelRatio: z.number().min(1).max(3).default(1)
 });
 
@@ -250,7 +225,7 @@ export const VisualSpecSchema = z.object({
   palette: z.array(HexColorSchema).min(1).max(500).optional(),
   type: z.enum(VISUAL_TYPES),
   story: z.enum(VISUAL_STORIES),
-  theme: z.enum(THEME_IDS).default("aurora-dark"),
+  theme: z.enum(THEME_IDS).default("light"),
   data: z.object({
     rows: z.array(DataRowSchema).min(1).max(5000)
   }),
@@ -272,36 +247,23 @@ export const VisualSpecSchema = z.object({
 
 export function defaultMotionForType(type: VisualType): MotionSpec {
   const presetByType: Record<VisualType, MotionPreset> = {
-    line: "draw",
-    area: "draw",
     bar: "grow",
     "horizontal-bar": "grow",
     "stacked-bar": "grow",
-    "grouped-bar": "grow",
-    pie: "sweep",
+    line: "draw",
+    area: "draw",
     donut: "sweep",
-    arc: "sweep",
+    pie: "sweep",
     rose: "bloom",
+    treemap: "fade-up",
     scatter: "fade-up",
     bubble: "fade-up",
     heatmap: "fade-up",
-    treemap: "fade-up",
-    radar: "draw",
-    gauge: "sweep",
-    "metric-card": "count-up",
-    ranking: "grow",
-    "bar-race": "grow",
-    "line-race": "draw",
-    slope: "draw",
-    bump: "draw",
-    waterfall: "grow",
-    sankey: "fade-up",
-    network: "fade-up",
-    timeline: "draw"
+    "metric-card": "count-up"
   };
 
   return {
-    preset: presetByType[type],
+    preset: presetByType[type] ?? "grow",
     durationMs: 1400,
     delayMs: 0,
     staggerMs: 80,
@@ -340,7 +302,7 @@ export const DEFAULT_VISUAL_SPEC: VisualSpec = {
   },
   type: "bar",
   story: "magnitude",
-  theme: "editorial-light",
+  theme: "light",
   data: { rows: DEFAULT_SAMPLE_ROWS },
   mappings: {
     category: "month",
@@ -353,7 +315,7 @@ export const DEFAULT_VISUAL_SPEC: VisualSpec = {
   export: {
     format: "animated-svg",
     wechatSafeMode: true,
-    width: 720,
-    height: 500
+    width: 1080,
+    height: 1350
   }
 };

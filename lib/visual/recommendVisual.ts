@@ -14,7 +14,6 @@ export function recommendVisual(rows: DataRow[], requested?: Partial<{ type: Vis
   const numberColumns = columns.filter((column) => column.type === "number");
   const dateColumns = columns.filter((column) => column.type === "date");
   const categoryColumns = columns.filter((column) => column.type === "category" || column.type === "string");
-  const names = new Set(columns.map((column) => column.name.toLowerCase()));
 
   const categoryColumn = categoryColumns[0];
   const dateColumn = dateColumns[0];
@@ -26,16 +25,6 @@ export function recommendVisual(rows: DataRow[], requested?: Partial<{ type: Vis
   const magnitudeCategory = dateLooksLikeRowAxis ? date : category ?? date;
 
   if (requested?.type && value) {
-    if ((requested.type === "sankey" || requested.type === "network") && names.has("source") && names.has("target")) {
-      return {
-        type: requested.type,
-        story: "flow",
-        mappings: { source: "source", target: "target", value },
-        confidence: 0.86,
-        reason: "已按你选择的流向图映射 source、target 和 value。"
-      };
-    }
-
     if ((requested.type === "scatter" || requested.type === "bubble") && secondNumber) {
       return {
         type: requested.type,
@@ -46,27 +35,26 @@ export function recommendVisual(rows: DataRow[], requested?: Partial<{ type: Vis
       };
     }
 
-    const partToWholeTypes: VisualType[] = ["donut", "pie", "arc", "rose", "gauge", "treemap"];
-    const timeTypes: VisualType[] = ["line", "area", "timeline", "slope", "bump", "line-race", "heatmap"];
-    const multiSeriesBarTypes: VisualType[] = ["stacked-bar", "grouped-bar"];
+    const partToWholeTypes: VisualType[] = ["donut", "pie", "rose", "treemap"];
+    const timeTypes: VisualType[] = ["line", "area", "heatmap"];
+    const multiSeriesBarTypes: VisualType[] = ["stacked-bar"];
     const categoryForRequested = partToWholeTypes.includes(requested.type)
       ? category ?? columns.find((column) => column.name !== value && column.name !== date)?.name ?? date ?? value
       : timeTypes.includes(requested.type)
         ? date ?? category ?? columns.find((column) => column.name !== value)?.name ?? value
-        : requested.type === "sankey"
-          ? category ?? date ?? columns.find((column) => column.name !== value)?.name ?? value
         : requested.type === "metric-card"
           ? date ?? category ?? columns.find((column) => column.name !== value)?.name ?? value
-        : magnitudeCategory ?? columns.find((column) => column.name !== value)?.name ?? value;
-    const seriesForRequested = (timeTypes.includes(requested.type) || multiSeriesBarTypes.includes(requested.type)) && category && category !== categoryForRequested ? category : undefined;
+          : magnitudeCategory ?? columns.find((column) => column.name !== value)?.name ?? value;
+    const seriesForRequested =
+      (timeTypes.includes(requested.type) || multiSeriesBarTypes.includes(requested.type)) && category && category !== categoryForRequested
+        ? category
+        : undefined;
     const storyForRequested: VisualStory =
       requested.story ??
       (partToWholeTypes.includes(requested.type)
         ? "part-to-whole"
         : timeTypes.includes(requested.type)
           ? "change-over-time"
-          : requested.type === "sankey" || requested.type === "network"
-            ? "flow"
           : "magnitude");
 
     return {
@@ -85,26 +73,6 @@ export function recommendVisual(rows: DataRow[], requested?: Partial<{ type: Vis
         : timeTypes.includes(requested.type)
           ? "已按趋势类图表优先映射时间字段和数值字段。"
           : "已按你选择的图表类型映射分类字段和数值字段。"
-    };
-  }
-
-  if (requested?.type === "rose" && category && value) {
-    return {
-      type: "rose",
-      story: requested.story ?? "part-to-whole",
-      mappings: { category, value },
-      confidence: 0.86,
-      reason: "已按玫瑰图映射分类字段和数值字段。"
-    };
-  }
-
-  if (names.has("source") && names.has("target") && (names.has("value") || value)) {
-    return {
-      type: "sankey",
-      story: "flow",
-      mappings: { source: "source", target: "target", value: names.has("value") ? "value" : value },
-      confidence: 0.78,
-      reason: "检测到 source、target 和 value，适合流向图。"
     };
   }
 

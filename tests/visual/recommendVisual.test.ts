@@ -11,38 +11,32 @@ const monthlyChannelRows = [
 describe("recommendVisual", () => {
   it("maps requested treemap charts to the composition category instead of the date axis", () => {
     const recommendation = recommendVisual(monthlyChannelRows, { type: "treemap" });
-
     expect(recommendation.type).toBe("treemap");
     expect(recommendation.story).toBe("part-to-whole");
     expect(recommendation.mappings.category).toBe("channel");
     expect(recommendation.mappings.value).toBe("value");
   });
 
-  it("keeps a real series field for requested grouped and stacked bar charts", () => {
-    const grouped = recommendVisual(monthlyChannelRows, { type: "grouped-bar" });
+  it("keeps a real series field for requested stacked bar charts", () => {
     const stacked = recommendVisual(monthlyChannelRows, { type: "stacked-bar" });
-
-    expect(grouped.mappings.category).toBe("month");
-    expect(grouped.mappings.series).toBe("channel");
     expect(stacked.mappings.category).toBe("month");
     expect(stacked.mappings.series).toBe("channel");
   });
 
   it("maps requested heatmaps to the time axis while preserving the category as series context", () => {
     const recommendation = recommendVisual(monthlyChannelRows, { type: "heatmap" });
-
     expect(recommendation.type).toBe("heatmap");
     expect(recommendation.story).toBe("change-over-time");
     expect(recommendation.mappings.category).toBe("month");
     expect(recommendation.mappings.series).toBe("channel");
   });
 
-  it("maps requested sankey fallback data to the business category instead of repeating the date axis", () => {
-    const recommendation = recommendVisual(monthlyChannelRows, { type: "sankey" });
-
-    expect(recommendation.type).toBe("sankey");
-    expect(recommendation.story).toBe("flow");
-    expect(recommendation.mappings.category).toBe("channel");
-    expect(recommendation.mappings.value).toBe("value");
+  it("recommends a line chart when a date and value field are present", () => {
+    const recommendation = recommendVisual([
+      { month: "2026-01", value: 20 },
+      { month: "2026-02", value: 32 }
+    ]);
+    expect(recommendation.type).toBe("line");
+    expect(recommendation.story).toBe("change-over-time");
   });
 });

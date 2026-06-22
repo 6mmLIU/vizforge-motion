@@ -25,7 +25,7 @@ function specFor(type: VisualSpec["type"], mappings: VisualSpec["mappings"]): Vi
     ...DEFAULT_VISUAL_SPEC,
     type,
     story: type === "rose" || type === "donut" ? "part-to-whole" : "magnitude",
-    theme: "editorial-light",
+    theme: "light",
     palette: ["#0a84ff", "#38bdf8"],
     data: { rows: userRows },
     mappings
@@ -40,7 +40,7 @@ describe("data-driven visual item counts and palettes", () => {
 
     expect(recommendation.mappings.category).toBe("month");
     expect(resolveVisualItemCount(spec)).toBe(12);
-    expect(resolvePaletteForSpec(spec, THEMES["editorial-light"])).toHaveLength(12);
+    expect(resolvePaletteForSpec(spec, THEMES["light"])).toHaveLength(12);
     expect(result.palette).toHaveLength(12);
     expect(result.svg.match(/attributeName="height"/g) ?? []).toHaveLength(12);
     expect(result.compatibility.safe).toBe(true);

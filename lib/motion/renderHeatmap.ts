@@ -1,10 +1,10 @@
 import { animate, group, rect, textNode } from "@/lib/motion/svgPrimitives";
 import { extractPoints, maxAbs, resolveFields, type Point } from "@/lib/motion/renderUtils";
 import { stagger } from "@/lib/motion/timeline";
+import { FONT, clamp, formatNumber, mix, readableOn, round, type Geom, type Rect } from "@/lib/motion/layout";
 import type { VisualSpec } from "@/lib/visual/visualSpec";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-const FONT = "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, Arial, sans-serif";
 const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 type CalendarCell = {
@@ -16,65 +16,196 @@ type CalendarCell = {
   month?: number;
 };
 
-export function renderHeatmap(spec: VisualSpec, theme: VisualTheme): string {
+export function renderHeatmap(spec: VisualSpec, theme: VisualTheme, g: Geom): string {
   const points = extractPoints(spec, 400);
   const fields = resolveFields(spec);
-  const dated = calendarCellsFromDates(points, fields.category);
-  if (!dated || points.length < 42) {
-    return renderMatrixHeatmap(spec, theme, points);
-  }
+  const cells = calendarCells(points, fields.category);
+  if (!cells || points.length < 42) return renderMatrix(spec, theme, g, points);
+  return renderCalendar(spec, theme, g, points, cells);
+}
 
-  const cells = dated;
+function lowColor(theme: VisualTheme): string {
+  return theme.mode === "dark" ? "#1d2640" : "#e9eef7";
+}
+
+function heatColor(value: number, max: number, theme: VisualTheme): string {
+  if (value <= 0) return theme.mode === "dark" ? "#161d33" : "#eef2f8";
+  const strength = clamp(value / max, 0.08, 1);
+  const ratio = strength < 0.2 ? 0.22 : strength < 0.4 ? 0.42 : strength < 0.6 ? 0.62 : strength < 0.8 ? 0.82 : 1;
+  return mix(lowColor(theme), theme.accent, ratio);
+}
+
+function renderCalendar(spec: VisualSpec, theme: VisualTheme, g: Geom, points: Point[], cells: CalendarCell[]): string {
   const max = Math.max(maxAbs(points), 1);
   const weeks = Math.max(1, Math.max(...cells.map((cell) => cell.col), 0) + 1);
-  const compact = spec.export.height <= 320;
-  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
-  const plot = {
-    x: 42,
-    y: compact ? 82 : tall ? 224 : 132,
-    width: spec.export.width - 84,
-    height: spec.export.height - (compact ? 126 : tall ? 386 : 218)
-  };
-  const gap = weeks > 56 ? 2 : weeks > 38 ? 3 : tall ? 7 : 5;
-  const cellSize = Math.max(4, Math.min(tall ? 30 : 12, (plot.width - Math.max(0, weeks - 1) * gap) / weeks));
-  const gridWidth = weeks * cellSize + Math.max(0, weeks - 1) * gap;
+  const legendH = round(34 * g.s);
+  const monthH = round(26 * g.s);
+  const area: Rect = { x: g.plot.x, y: g.plot.y, width: g.plot.width, height: g.plot.height - legendH };
+  const gap = weeks > 48 ? 2 : weeks > 32 ? 3 : 5;
+  const cellByWidth = (area.width - (weeks - 1) * gap) / weeks;
+  const cellByHeight = (area.height - monthH - 6 * gap) / 7;
+  const cellSize = clamp(Math.min(cellByWidth, cellByHeight), 4, g.tall ? 30 : 22);
+  const gridWidth = weeks * cellSize + (weeks - 1) * gap;
   const gridHeight = 7 * cellSize + 6 * gap;
-  const startX = plot.x + Math.max(0, (plot.width - gridWidth) / 2);
-  const startY = tall
-    ? plot.y + Math.max(148, Math.min(222, (plot.height - gridHeight) * 0.25))
-    : plot.y + Math.max(0, Math.min(28, (plot.height - gridHeight - 34) / 2));
+  const startX = area.x + Math.max(0, (area.width - gridWidth) / 2);
+  const startY = area.y + Math.max(0, (area.height - monthH - gridHeight) / 2);
 
   const calendar = cells
     .map((cell) => {
       const x = startX + cell.col * (cellSize + gap);
       const y = startY + cell.row * (cellSize + gap);
-      const delay = stagger(cell.index, spec.motion.delayMs, Math.min(18, spec.motion.staggerMs));
+      const delay = stagger(cell.index, spec.motion.delayMs, Math.min(16, spec.motion.staggerMs));
       return rect(
         {
-          x: Number(x.toFixed(2)),
-          y: Number(y.toFixed(2)),
-          width: Number(cellSize.toFixed(2)),
-          height: Number(cellSize.toFixed(2)),
-          rx: Number(Math.max(2, cellSize * 0.28).toFixed(2)),
-          fill: heatColor(cell.value, max, theme.accent),
+          x: round(x),
+          y: round(y),
+          width: round(cellSize),
+          height: round(cellSize),
+          rx: round(Math.max(2, cellSize * 0.26)),
+          fill: heatColor(cell.value, max, theme),
           opacity: 1
         },
-        animate("opacity", cell.value > 0 ? 0.24 : 0.72, 1, Math.min(520, spec.motion.durationMs), delay, { easing: "ease-out" })
+        animate("opacity", cell.value > 0 ? 0.28 : 0.7, 1, Math.min(520, spec.motion.durationMs), delay, { easing: "ease-out" })
       );
     })
     .join("");
 
-  return group(renderTabs(spec.export.width, theme, tall ? startY - 72 : 62) + calendar + renderMonthLabels(cells, startX, startY + gridHeight + (tall ? 38 : 28), cellSize + gap, theme));
+  const monthLabels = renderMonthLabels(cells, startX, startY + gridHeight + round(20 * g.s), cellSize + gap, theme, g);
+  const legend = renderIntensityLegend(theme, g, g.plot.x + g.plot.width, g.plot.y + g.plot.height);
+  return group(calendar + monthLabels + legend);
 }
 
-function calendarCellsFromDates(points: Point[], categoryField: string): CalendarCell[] | null {
+function renderMatrix(spec: VisualSpec, theme: VisualTheme, g: Geom, points: Point[]): string {
+  const legendH = round(34 * g.s);
+  const area: Rect = { x: g.plot.x, y: g.plot.y, width: g.plot.width, height: g.plot.height - legendH };
+  const max = Math.max(maxAbs(points), 1);
+  const count = Math.max(1, points.length);
+  const cols = count <= 4 ? 2 : g.tall ? 3 : Math.min(6, Math.ceil(Math.sqrt(count * 1.4)));
+  const rows = Math.ceil(count / cols);
+  const gap = round(10 * g.s);
+  const cellWidth = (area.width - gap * (cols - 1)) / cols;
+  const cellHeight = clamp((area.height - gap * (rows - 1)) / rows, 40, 150);
+  const gridHeight = rows * cellHeight + (rows - 1) * gap;
+  const startY = area.y + Math.max(0, (area.height - gridHeight) / 2);
+
+  const tiles = points
+    .map((point, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const x = area.x + col * (cellWidth + gap);
+      const y = startY + row * (cellHeight + gap);
+      const value = Math.max(0, point.value);
+      const fill = heatColor(value, max, theme);
+      const ink = value / max >= 0.55 ? readableOn(mix(lowColor(theme), theme.accent, 0.9)) : theme.text;
+      const delay = stagger(index, spec.motion.delayMs, Math.max(40, spec.motion.staggerMs));
+      return (
+        rect(
+          {
+            x: round(x),
+            y: round(y),
+            width: round(cellWidth),
+            height: round(cellHeight),
+            rx: round(12 * g.s),
+            fill,
+            stroke: theme.border,
+            "stroke-width": 0.8
+          },
+          animate("opacity", 0.28, 1, Math.min(560, spec.motion.durationMs), delay, { easing: "ease-out" })
+        ) +
+        textNode(point.label.slice(0, 10), {
+          x: round(x + cellWidth / 2),
+          y: round(y + cellHeight / 2 - round(6 * g.s)),
+          fill: ink,
+          "font-size": Math.round(13 * g.s),
+          "font-family": FONT,
+          "font-weight": 640,
+          "text-anchor": "middle"
+        }) +
+        textNode(formatNumber(value), {
+          x: round(x + cellWidth / 2),
+          y: round(y + cellHeight / 2 + round(18 * g.s)),
+          fill: ink,
+          "font-size": Math.round(18 * g.s),
+          "font-family": FONT,
+          "font-weight": 760,
+          "text-anchor": "middle"
+        })
+      );
+    })
+    .join("");
+
+  const legend = renderIntensityLegend(theme, g, g.plot.x + g.plot.width, g.plot.y + g.plot.height);
+  return group(tiles + legend);
+}
+
+function renderIntensityLegend(theme: VisualTheme, g: Geom, rightX: number, bottomY: number): string {
+  const size = round(13 * g.s);
+  const gap = round(4 * g.s);
+  const steps = [0.22, 0.42, 0.62, 0.82, 1];
+  const fontSize = Math.round(12 * g.s);
+  const swatchWidth = steps.length * (size + gap);
+  const y = bottomY - size;
+  const startX = rightX - swatchWidth - round(28 * g.s);
+  const swatches = steps
+    .map((ratio, index) =>
+      rect({
+        x: round(startX + index * (size + gap)),
+        y: round(y),
+        width: round(size),
+        height: round(size),
+        rx: round(3 * g.s),
+        fill: mix(lowColor(theme), theme.accent, ratio)
+      })
+    )
+    .join("");
+  return (
+    textNode("少", {
+      x: round(startX - round(8 * g.s)),
+      y: round(y + size * 0.82),
+      fill: theme.soft,
+      "font-size": fontSize,
+      "font-family": FONT,
+      "text-anchor": "end"
+    }) +
+    swatches +
+    textNode("多", {
+      x: round(startX + swatchWidth + round(6 * g.s)),
+      y: round(y + size * 0.82),
+      fill: theme.soft,
+      "font-size": fontSize,
+      "font-family": FONT
+    })
+  );
+}
+
+function renderMonthLabels(cells: CalendarCell[], startX: number, y: number, columnStep: number, theme: VisualTheme, g: Geom): string {
+  const byMonth = new Map<number, number>();
+  cells.forEach((cell) => {
+    if (cell.month === undefined || !cell.point) return;
+    if (!byMonth.has(cell.month)) byMonth.set(cell.month, cell.col);
+  });
+  if (byMonth.size === 0) return "";
+  return Array.from(byMonth.entries())
+    .map(([month, col]) =>
+      textNode(MONTH_LABELS[month], {
+        x: round(startX + col * columnStep),
+        y: round(y),
+        fill: theme.soft,
+        "font-size": Math.round(12.5 * g.s),
+        "font-family": FONT,
+        "font-weight": 520
+      })
+    )
+    .join("");
+}
+
+function calendarCells(points: Point[], categoryField: string): CalendarCell[] | null {
   const dated = points
     .map((point, index) => {
       const date = parseDate(point.raw[categoryField] ?? point.label);
       return date ? { point, index, date } : null;
     })
     .filter((item): item is { point: Point; index: number; date: Date } => Boolean(item));
-
   if (dated.length < Math.max(1, Math.ceil(points.length * 0.7))) return null;
 
   dated.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -83,10 +214,7 @@ function calendarCellsFromDates(points: Point[], categoryField: string): Calenda
   const totalDays = daysBetween(start, end) + 1;
   const weeks = Math.max(1, Math.ceil(totalDays / 7));
   const byOffset = new Map<number, (typeof dated)[number]>();
-
-  dated.forEach((item) => {
-    byOffset.set(daysBetween(start, item.date), item);
-  });
+  dated.forEach((item) => byOffset.set(daysBetween(start, item.date), item));
 
   return Array.from({ length: weeks * 7 }, (_, offset) => {
     const item = byOffset.get(offset);
@@ -102,176 +230,12 @@ function calendarCellsFromDates(points: Point[], categoryField: string): Calenda
   });
 }
 
-function renderMatrixHeatmap(spec: VisualSpec, theme: VisualTheme, points: Point[]): string {
-  const tall = theme.id === "editorial-light" && spec.export.height / spec.export.width > 1.15;
-  const plot = {
-    x: tall ? 58 : 54,
-    y: tall ? 224 : 126,
-    width: spec.export.width - (tall ? 116 : 108),
-    height: spec.export.height - (tall ? 410 : 216)
-  };
-  const max = Math.max(maxAbs(points), 1);
-  const count = Math.max(1, points.length);
-  const cols = count <= 4 ? 2 : tall ? 3 : Math.min(6, Math.ceil(Math.sqrt(count * 1.4)));
-  const rows = Math.ceil(count / cols);
-  const gap = tall ? 12 : 8;
-  const cellWidth = Math.max(42, (plot.width - gap * (cols - 1)) / cols);
-  const cellHeight = Math.max(42, Math.min(tall ? 126 : 88, (plot.height - gap * (rows - 1)) / rows));
-  const gridWidth = cols * cellWidth + (cols - 1) * gap;
-  const gridHeight = rows * cellHeight + (rows - 1) * gap;
-  const startX = plot.x + Math.max(0, (plot.width - gridWidth) / 2);
-  const startY = plot.y + Math.max(0, (plot.height - gridHeight) / 2);
-
-  return points
-    .map((point, index) => {
-      const col = index % cols;
-      const row = Math.floor(index / cols);
-      const x = startX + col * (cellWidth + gap);
-      const y = startY + row * (cellHeight + gap);
-      const value = Math.max(0, point.value);
-      const fill = heatColor(value, max, theme.accent);
-      const strong = value / max >= 0.5;
-      const delay = stagger(index, spec.motion.delayMs, Math.min(42, spec.motion.staggerMs));
-      return (
-        rect(
-          {
-            x: Number(x.toFixed(2)),
-            y: Number(y.toFixed(2)),
-            width: Number(cellWidth.toFixed(2)),
-            height: Number(cellHeight.toFixed(2)),
-            rx: tall ? 18 : 12,
-            fill,
-            stroke: "#e6edf5",
-            "stroke-width": 0.8
-          },
-          animate("opacity", 0.24, 1, Math.min(560, spec.motion.durationMs), delay, { easing: "ease-out" })
-        ) +
-        textNode(point.label.slice(0, tall ? 12 : 10), {
-          x: x + cellWidth / 2,
-          y: y + cellHeight / 2 - (tall ? 8 : 5),
-          fill: strong ? "#ffffff" : theme.text,
-          "font-size": tall ? 15 : 12,
-          "font-family": FONT,
-          "font-weight": 680,
-          "text-anchor": "middle"
-        }) +
-        textNode(value.toLocaleString("zh-CN"), {
-          x: x + cellWidth / 2,
-          y: y + cellHeight / 2 + (tall ? 20 : 16),
-          fill: strong ? "#ffffff" : theme.muted,
-          "font-size": tall ? 22 : 16,
-          "font-family": FONT,
-          "font-weight": 760,
-          "text-anchor": "middle"
-        })
-      );
-    })
-    .join("");
-}
-
-function renderTabs(width: number, theme: VisualTheme, y: number): string {
-  const labels = [
-    { text: "每日", active: true },
-    { text: "每周", active: false },
-    { text: "累计", active: false }
-  ];
-  const startX = width - (y > 100 ? 214 : 170);
-
-  return labels
-    .map((label, index) =>
-      textNode(label.text, {
-        x: startX + index * (y > 100 ? 54 : 42),
-        y,
-        fill: label.active ? theme.text : theme.muted,
-        "font-size": y > 100 ? 16 : 15,
-        "font-family": FONT,
-        "font-weight": label.active ? 660 : 520
-      })
-    )
-    .join("");
-}
-
-function renderMonthLabels(cells: CalendarCell[], startX: number, y: number, columnStep: number, theme: VisualTheme): string {
-  const byMonth = new Map<number, number>();
-
-  cells.forEach((cell) => {
-    if (cell.month === undefined) return;
-    if (!cell.point) return;
-    if (!byMonth.has(cell.month)) byMonth.set(cell.month, cell.col);
-  });
-
-  const labels =
-    byMonth.size > 0
-      ? Array.from(byMonth.entries()).map(([month, col]) => ({ label: MONTH_LABELS[month], col }))
-      : fallbackMonthLabels(Math.max(...cells.map((cell) => cell.col), 0) + 1);
-
-  return labels
-    .map(({ label, col }) =>
-      textNode(label, {
-        x: Number((startX + col * columnStep).toFixed(2)),
-        y: Number(y.toFixed(2)),
-        fill: theme.muted,
-        "font-size": 15,
-        "font-family": FONT,
-        "font-weight": 560
-      })
-    )
-    .join("");
-}
-
-function fallbackMonthLabels(weeks: number) {
-  const labels = ["7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月", "4月", "5月", "6月"];
-  return labels.map((label, index) => ({
-    label,
-    col: Math.round((index / Math.max(1, labels.length - 1)) * Math.max(0, weeks - 1))
-  }));
-}
-
-function heatColor(value: number, max: number, accent: string): string {
-  if (value <= 0) return "#eef2f7";
-  const strength = Math.min(1, Math.max(0.08, value / max));
-  const ratio = strength < 0.18 ? 0.18 : strength < 0.34 ? 0.34 : strength < 0.52 ? 0.55 : strength < 0.72 ? 0.78 : 1;
-  return mixWithWhite(accent, ratio);
-}
-
-function mixWithWhite(hex: string, ratio: number): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-  const t = Math.max(0, Math.min(1, ratio));
-  const r = Math.round(255 + (rgb.r - 255) * t);
-  const g = Math.round(255 + (rgb.g - 255) * t);
-  const b = Math.round(255 + (rgb.b - 255) * t);
-  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const value = hex.trim().replace(/^#/, "");
-  if (value.length === 3) {
-    const r = parseInt(value[0] + value[0], 16);
-    const g = parseInt(value[1] + value[1], 16);
-    const b = parseInt(value[2] + value[2], 16);
-    if ([r, g, b].some(Number.isNaN)) return null;
-    return { r, g, b };
-  }
-  if (value.length === 6) {
-    const r = parseInt(value.slice(0, 2), 16);
-    const g = parseInt(value.slice(2, 4), 16);
-    const b = parseInt(value.slice(4, 6), 16);
-    if ([r, g, b].some(Number.isNaN)) return null;
-    return { r, g, b };
-  }
-  return null;
-}
-
 function parseDate(value: unknown): Date | null {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
   const text = String(value ?? "").trim();
   const match = text.match(/^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/);
   if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = Number(match[3] ?? 1);
-  const date = new Date(Date.UTC(year, month, day));
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3] ?? 1)));
   return Number.isNaN(date.getTime()) ? null : date;
 }
 

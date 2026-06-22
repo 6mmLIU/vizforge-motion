@@ -1,26 +1,31 @@
 import { tag } from "@/lib/motion/svgPrimitives";
+import { GRADIENT_CAP, darken, lighten } from "@/lib/motion/layout";
 import type { VisualTheme } from "@/lib/visual/themes";
 
-export function linearGradient(id: string, stops: Array<{ offset: string; color: string; opacity?: number }>) {
+export function linearGradient(
+  id: string,
+  stops: Array<{ offset: string; color: string; opacity?: number }>,
+  vertical = false
+) {
+  const coords = vertical ? { x1: "0%", y1: "0%", x2: "0%", y2: "100%" } : { x1: "0%", y1: "0%", x2: "100%", y2: "100%" };
   return tag(
     "linearGradient",
-    { id, x1: "0%", y1: "0%", x2: "100%", y2: "100%" },
+    { id, ...coords },
     stops.map((stop) => tag("stop", { offset: stop.offset, "stop-color": stop.color, "stop-opacity": stop.opacity ?? 1 })).join("")
   );
 }
 
 export function baseDefs(theme: VisualTheme): string {
-  const glow = theme.glow
-    ? linearGradient("vizforgeGlow", [
-        { offset: "0%", color: theme.palette[0], opacity: 0.36 },
-        { offset: "55%", color: theme.palette[1] ?? theme.accent, opacity: 0.18 },
-        { offset: "100%", color: theme.background, opacity: 0 }
-      ])
-    : "";
-  const bar = linearGradient("vizforgeBar", [
-    { offset: "0%", color: theme.palette[0] },
-    { offset: "60%", color: theme.palette[1] ?? theme.accent },
-    { offset: "100%", color: theme.palette[2] ?? theme.accent }
-  ]);
-  return tag("defs", {}, glow + bar);
+  const count = Math.min(theme.palette.length, GRADIENT_CAP);
+  const gradients = Array.from({ length: count }, (_, index) => {
+    const color = theme.palette[index];
+    const top = theme.mode === "dark" ? lighten(color, 0.22) : lighten(color, 0.16);
+    const bottom = theme.mode === "dark" ? darken(color, 0.06) : darken(color, 0.04);
+    return linearGradient(`vizGrad${index}`, [
+      { offset: "0%", color: top },
+      { offset: "100%", color: bottom }
+    ], true);
+  }).join("");
+
+  return tag("defs", {}, gradients);
 }

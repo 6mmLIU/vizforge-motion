@@ -2,6 +2,7 @@ import { renderAnimatedSvg } from "@/lib/motion/animatedSvgRenderer";
 import { svgToImage, type ImageExportFormat } from "@/lib/render/svgToImage";
 import { resolveVisualItemCount } from "@/lib/visual/autoPalette";
 import { recommendVisual } from "@/lib/visual/recommendVisual";
+import { resolveThemeId } from "@/lib/visual/themes";
 import { DEFAULT_VISUAL_SPEC, VisualSpecSchema, defaultMotionForType, type ExportFormat, type VisualSpec } from "@/lib/visual/visualSpec";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -13,6 +14,36 @@ const IMAGE_FORMATS = new Set<ExportFormat>(["png", "webp", "jpeg"]);
 const RENDER_ITEM_LIMITS: Partial<Record<VisualSpec["type"], number>> = {
   heatmap: 400
 };
+
+const TYPE_ALIASES: Record<string, VisualSpec["type"]> = {
+  "grouped-bar": "bar",
+  waterfall: "bar",
+  radar: "bar",
+  ranking: "horizontal-bar",
+  "bar-race": "horizontal-bar",
+  arc: "donut",
+  gauge: "donut",
+  slope: "line",
+  bump: "line",
+  timeline: "line",
+  "line-race": "line",
+  sankey: "treemap",
+  network: "treemap"
+};
+
+const STORY_ALIASES: Record<string, VisualSpec["story"]> = {
+  flow: "part-to-whole",
+  spatial: "distribution",
+  deviation: "magnitude"
+};
+
+function resolveType(type: string): VisualSpec["type"] {
+  return TYPE_ALIASES[type] ?? (type as VisualSpec["type"]);
+}
+
+function resolveStory(story: string): VisualSpec["story"] {
+  return STORY_ALIASES[story] ?? (story as VisualSpec["story"]);
+}
 
 function safeError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -50,8 +81,8 @@ function normalizeRenderPayload(input: unknown): unknown {
     : isRecord(input.data) && Array.isArray(input.data.rows)
       ? input.data.rows
       : DEFAULT_VISUAL_SPEC.data.rows;
-  const type = stringValue(visual.type) ?? stringValue(input.type) ?? DEFAULT_VISUAL_SPEC.type;
-  const story = stringValue(visual.story) ?? stringValue(input.story) ?? DEFAULT_VISUAL_SPEC.story;
+  const type = resolveType(stringValue(visual.type) ?? stringValue(input.type) ?? DEFAULT_VISUAL_SPEC.type);
+  const story = resolveStory(stringValue(visual.story) ?? stringValue(input.story) ?? DEFAULT_VISUAL_SPEC.story);
   const exportFormat = stringValue(exportConfig.format) ?? DEFAULT_VISUAL_SPEC.export.format;
   const target = stringValue(exportConfig.target)?.toLowerCase();
   const targetSize =
@@ -77,7 +108,7 @@ function normalizeRenderPayload(input: unknown): unknown {
     palette: Array.isArray(input.palette) ? input.palette : Array.isArray(visual.palette) ? visual.palette : undefined,
     type,
     story,
-    theme: stringValue(input.theme) ?? stringValue(visual.theme) ?? DEFAULT_VISUAL_SPEC.theme,
+    theme: resolveThemeId(stringValue(input.theme) ?? stringValue(visual.theme) ?? DEFAULT_VISUAL_SPEC.theme),
     data: { rows: dataRows },
     mappings,
     motion: {

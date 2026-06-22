@@ -11,16 +11,12 @@ import { THEMES } from "@/lib/visual/themes";
 import {
   DEFAULT_VISUAL_SPEC,
   EXPORT_FORMATS,
-  MOTION_PRESETS,
   THEME_IDS,
-  VISUAL_STORIES,
-  VISUAL_TYPES,
   CardSpecSchema,
   defaultMotionForType,
   type CardSpec,
   type DataRow,
   type ExportFormat,
-  type MotionPreset,
   type ThemeId,
   type VisualSpec,
   type VisualStory,
@@ -78,35 +74,25 @@ function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-const dualAreaRows: DataRow[] = [
-  { month: "2026-01", 自然流量: 29, 付费广告: 14 },
-  { month: "2026-02", 自然流量: 38, 付费广告: 24 },
-  { month: "2026-03", 自然流量: 33, 付费广告: 18 },
-  { month: "2026-04", 自然流量: 22, 付费广告: 30 },
-  { month: "2026-05", 自然流量: 41, 付费广告: 27 },
-  { month: "2026-06", 自然流量: 25, 付费广告: 19 },
-  { month: "2026-07", 自然流量: 28, 付费广告: 24 },
-  { month: "2026-08", 自然流量: 31, 付费广告: 28 },
-  { month: "2026-09", 自然流量: 18, 付费广告: 15 },
-  { month: "2026-10", 自然流量: 52, 付费广告: 42 },
-  { month: "2026-11", 自然流量: 36, 付费广告: 32 },
-  { month: "2026-12", 自然流量: 31, 付费广告: 24 }
+const dualSeriesRows: DataRow[] = [
+  { month: "2026-01", channel: "自然流量", value: 29 },
+  { month: "2026-02", channel: "自然流量", value: 38 },
+  { month: "2026-03", channel: "自然流量", value: 33 },
+  { month: "2026-04", channel: "自然流量", value: 42 },
+  { month: "2026-05", channel: "自然流量", value: 41 },
+  { month: "2026-06", channel: "自然流量", value: 52 },
+  { month: "2026-01", channel: "付费广告", value: 14 },
+  { month: "2026-02", channel: "付费广告", value: 24 },
+  { month: "2026-03", channel: "付费广告", value: 18 },
+  { month: "2026-04", channel: "付费广告", value: 30 },
+  { month: "2026-05", channel: "付费广告", value: 27 },
+  { month: "2026-06", channel: "付费广告", value: 42 }
 ];
+const dualSeriesCsv = rowsToCsv(dualSeriesRows, ["month", "channel", "value"]);
+const dualSeriesMarkdown = rowsToMarkdown(dualSeriesRows, ["month", "channel", "value"]);
+const dualSeriesJson = JSON.stringify(dualSeriesRows, null, 2);
 
-const dualAreaCsv = [
-  "month,自然流量,付费广告",
-  ...dualAreaRows.map((row) => `${row.month},${row.自然流量},${row.付费广告}`)
-].join("\n");
-
-const dualAreaMarkdown = [
-  "| month | 自然流量 | 付费广告 |",
-  "| --- | ---: | ---: |",
-  ...dualAreaRows.map((row) => `| ${row.month} | ${row.自然流量} | ${row.付费广告} |`)
-].join("\n");
-
-const dualAreaJson = JSON.stringify(dualAreaRows, null, 2);
-
-const horizontalBarRows: DataRow[] = [
+const rankingRows: DataRow[] = [
   { channel: "自然流量", value: 118 },
   { channel: "付费广告", value: 96 },
   { channel: "公众号", value: 82 },
@@ -115,12 +101,11 @@ const horizontalBarRows: DataRow[] = [
   { channel: "内容推荐", value: 58 },
   { channel: "搜索引擎", value: 43 }
 ];
+const rankingCsv = rowsToCsv(rankingRows, ["channel", "value"]);
+const rankingMarkdown = rowsToMarkdown(rankingRows, ["channel", "value"]);
+const rankingJson = JSON.stringify(rankingRows, null, 2);
 
-const horizontalBarCsv = rowsToCsv(horizontalBarRows, ["channel", "value"]);
-const horizontalBarMarkdown = rowsToMarkdown(horizontalBarRows, ["channel", "value"]);
-const horizontalBarJson = JSON.stringify(horizontalBarRows, null, 2);
-
-const tokenActivityRows: DataRow[] = Array.from({ length: 365 }, (_, index) => {
+const dailyActivityRows: DataRow[] = Array.from({ length: 365 }, (_, index) => {
   const date = new Date(Date.UTC(2025, 6, 1 + index));
   const month = date.getUTCMonth();
   const weekday = date.getUTCDay();
@@ -131,140 +116,157 @@ const tokenActivityRows: DataRow[] = Array.from({ length: 365 }, (_, index) => {
   const value = quiet ? 0 : Math.round(wave + weekdayLift + launchWindow + (index % 9));
   return { date: isoDate(date), value };
 });
-
-const tokenActivityCsv = rowsToCsv(tokenActivityRows, ["date", "value"]);
-const tokenActivityMarkdown = rowsToMarkdown(tokenActivityRows, ["date", "value"]);
-const tokenActivityJson = JSON.stringify(tokenActivityRows, null, 2);
+const dailyActivityCsv = rowsToCsv(dailyActivityRows, ["date", "value"]);
+const dailyActivityMarkdown = rowsToMarkdown(dailyActivityRows, ["date", "value"]);
+const dailyActivityJson = JSON.stringify(dailyActivityRows, null, 2);
 
 const defaultJson = JSON.stringify(DEFAULT_VISUAL_SPEC.data.rows, null, 2);
 const defaultMarkdown = rowsToMarkdown(DEFAULT_VISUAL_SPEC.data.rows, ["month", "value", "channel"]);
 const defaultCardJson = JSON.stringify(DEFAULT_VISUAL_SPEC.card, null, 2);
 
 const layoutSizes = {
-  "小红书竖卡": { width: 1080, height: 1440 },
-  "高清横卡": { width: 1440, height: 1000 },
-  "公众号横卡": { width: 720, height: 500 },
-  "方形社媒": { width: 640, height: 640 },
-  "PPT 宽图": { width: 960, height: 540 },
-  "紧凑卡片": { width: 640, height: 420 },
-  "活动热力条": { width: 960, height: 260 }
+  小红书竖卡: { width: 1080, height: 1440 },
+  方形社媒: { width: 1080, height: 1080 },
+  高清横卡: { width: 1440, height: 1000 },
+  公众号横卡: { width: 1040, height: 720 },
+  "PPT 宽图": { width: 1280, height: 720 },
+  活动热力条: { width: 1280, height: 420 }
 } as const;
+
+type LayoutName = keyof typeof layoutSizes;
 
 const IMAGE_EXPORT_PIXEL_RATIO = 2;
 
 const palettePresets = [
-  { name: "Hero 蓝", colors: ["#0a84ff", "#38bdf8", "#22c55e", "#f59e0b", "#f472b6"] },
-  { name: "极光科技", colors: ["#30f6ff", "#a855f7", "#36d399", "#f8d66d", "#ff7ab6"] },
-  { name: "报告克制", colors: ["#111827", "#475569", "#0ea5e9", "#16a394", "#f59e0b"] },
-  { name: "内容传播", colors: ["#2f63d8", "#d84d8b", "#f06a3f", "#10b981", "#7b61ff"] }
+  { name: "经典蓝", colors: ["#3b6ef5", "#12b3a6", "#f59e0b", "#ef5da8", "#7c5cff"] },
+  { name: "内容传播", colors: ["#2f63d8", "#d84d8b", "#f06a3f", "#10b981", "#7b61ff"] },
+  { name: "霓虹夜色", colors: ["#5b8cff", "#33d6c0", "#ffc24b", "#ff77b0", "#a78bfa"] },
+  { name: "报告克制", colors: ["#1f2937", "#4b5563", "#2563eb", "#0ea5e9", "#64748b"] }
 ];
 
-const templatePresets = [
+type ChartType = {
+  type: VisualType;
+  name: string;
+  story: VisualStory;
+  desc: string;
+};
+
+const chartGroups: Array<{ group: string; items: ChartType[] }> = [
   {
-    name: "小红书数据卡",
+    group: "对比",
+    items: [
+      { type: "bar", name: "柱状图", story: "magnitude", desc: "分类高低对比" },
+      { type: "horizontal-bar", name: "横向排行", story: "ranking", desc: "榜单排序对比" },
+      { type: "stacked-bar", name: "堆叠柱状", story: "magnitude", desc: "多系列构成对比" }
+    ]
+  },
+  {
+    group: "趋势",
+    items: [
+      { type: "line", name: "折线趋势", story: "change-over-time", desc: "随时间变化" },
+      { type: "area", name: "面积趋势", story: "change-over-time", desc: "趋势与体量" },
+      { type: "heatmap", name: "活动热力图", story: "change-over-time", desc: "日历活跃度" }
+    ]
+  },
+  {
+    group: "构成",
+    items: [
+      { type: "donut", name: "环形占比", story: "part-to-whole", desc: "整体占比" },
+      { type: "pie", name: "饼图", story: "part-to-whole", desc: "份额构成" },
+      { type: "rose", name: "玫瑰图", story: "part-to-whole", desc: "传播感构成" },
+      { type: "treemap", name: "矩形树图", story: "part-to-whole", desc: "层级占比" }
+    ]
+  },
+  {
+    group: "分布",
+    items: [
+      { type: "scatter", name: "散点图", story: "correlation", desc: "两指标相关" },
+      { type: "bubble", name: "气泡图", story: "correlation", desc: "三维关系" },
+      { type: "metric-card", name: "指标卡", story: "single-metric", desc: "核心 KPI" }
+    ]
+  }
+];
+
+const chartByType = new Map(chartGroups.flatMap((group) => group.items.map((item) => [item.type, item] as const)));
+
+type TemplatePreset = {
+  name: string;
+  type: VisualType;
+  title: string;
+  subtitle: string;
+  csv: string;
+  json: string;
+  markdown: string;
+  cardJson: string;
+  layout: LayoutName;
+};
+
+const templatePresets: TemplatePreset[] = [
+  {
+    name: "销售数据卡",
+    type: "bar",
     title: "销售表现",
     subtitle: "最近周期销售数据，一眼看清高峰月份",
-    type: "bar" as VisualType,
-    story: "magnitude" as VisualStory,
-    motion: "grow" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: defaultCsv,
-    sampleJson: defaultJson,
-    sampleMarkdown: defaultMarkdown,
-    sampleCardJson: defaultCardJson,
-    layout: "小红书竖卡" as keyof typeof layoutSizes
+    csv: defaultCsv,
+    json: defaultJson,
+    markdown: defaultMarkdown,
+    cardJson: defaultCardJson,
+    layout: "小红书竖卡"
   },
   {
-    name: "横向排行条形",
+    name: "渠道排行榜",
+    type: "horizontal-bar",
     title: "渠道排行",
     subtitle: "按当前数据排序的横向对比",
-    type: "horizontal-bar" as VisualType,
-    story: "ranking" as VisualStory,
-    motion: "grow" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: horizontalBarCsv,
-    sampleJson: horizontalBarJson,
-    sampleMarkdown: horizontalBarMarkdown,
-    sampleCardJson: ""
+    csv: rankingCsv,
+    json: rankingJson,
+    markdown: rankingMarkdown,
+    cardJson: "",
+    layout: "小红书竖卡"
   },
   {
-    name: "Token 活动热力图",
-    title: "Token 活动",
-    subtitle: "",
-    type: "heatmap" as VisualType,
-    story: "change-over-time" as VisualStory,
-    motion: "fade-up" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: tokenActivityCsv,
-    sampleJson: tokenActivityJson,
-    sampleMarkdown: tokenActivityMarkdown,
-    sampleCardJson: "",
-    layout: "活动热力条" as keyof typeof layoutSizes
-  },
-  {
-    name: "增长趋势折线",
-    title: "访问趋势",
-    subtitle: "按月份展开的核心指标",
-    type: "line" as VisualType,
-    story: "change-over-time" as VisualStory,
-    motion: "draw" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: defaultCsv,
-    sampleJson: defaultJson,
-    sampleMarkdown: defaultMarkdown,
-    sampleCardJson: ""
-  },
-  {
-    name: "双线面积趋势",
+    name: "双系列趋势",
+    type: "area",
     title: "访问来源趋势",
-    subtitle: "双系列面积与趋势线来自同一份数据",
-    type: "area" as VisualType,
-    story: "change-over-time" as VisualStory,
-    motion: "draw" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: dualAreaCsv,
-    sampleJson: dualAreaJson,
-    sampleMarkdown: dualAreaMarkdown,
-    sampleCardJson: ""
+    subtitle: "自然流量与付费广告的月度走势",
+    csv: dualSeriesCsv,
+    json: dualSeriesJson,
+    markdown: dualSeriesMarkdown,
+    cardJson: "",
+    layout: "高清横卡"
   },
   {
-    name: "渠道占比圆环",
+    name: "渠道占比环",
+    type: "donut",
     title: "渠道占比",
     subtitle: "按渠道汇总的来源构成",
-    type: "donut" as VisualType,
-    story: "part-to-whole" as VisualStory,
-    motion: "sweep" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: defaultCsv,
-    sampleJson: defaultJson,
-    sampleMarkdown: defaultMarkdown,
-    sampleCardJson: ""
+    csv: rankingCsv,
+    json: rankingJson,
+    markdown: rankingMarkdown,
+    cardJson: "",
+    layout: "小红书竖卡"
   },
   {
-    name: "玫瑰构成图",
-    title: "玫瑰构成",
-    subtitle: "按渠道汇总后的半径构成",
-    type: "rose" as VisualType,
-    story: "part-to-whole" as VisualStory,
-    motion: "bloom" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: defaultCsv,
-    sampleJson: defaultJson,
-    sampleMarkdown: defaultMarkdown,
-    sampleCardJson: ""
+    name: "活动热力图",
+    type: "heatmap",
+    title: "活动热力图",
+    subtitle: "全年每日活跃度，颜色越深越活跃",
+    csv: dailyActivityCsv,
+    json: dailyActivityJson,
+    markdown: dailyActivityMarkdown,
+    cardJson: "",
+    layout: "活动热力条"
   },
   {
-    name: "单指标快照",
+    name: "核心指标卡",
+    type: "metric-card",
     title: "核心指标",
     subtitle: "主指标、趋势和迷你柱图都来自输入数据",
-    type: "metric-card" as VisualType,
-    story: "single-metric" as VisualStory,
-    motion: "count-up" as MotionPreset,
-    theme: "editorial-light" as ThemeId,
-    sampleCsv: defaultCsv,
-    sampleJson: defaultJson,
-    sampleMarkdown: defaultMarkdown,
-    sampleCardJson: defaultCardJson
+    csv: defaultCsv,
+    json: defaultJson,
+    markdown: defaultMarkdown,
+    cardJson: defaultCardJson,
+    layout: "方形社媒"
   }
 ];
 
@@ -311,9 +313,8 @@ function buildSpec(params: {
   type: VisualType;
   story: VisualStory;
   theme: ThemeId;
-  motionPreset: MotionPreset;
   exportFormat: ExportFormat;
-  layout: keyof typeof layoutSizes;
+  layout: LayoutName;
   title: string;
   subtitle: string;
   wechatSafe: boolean;
@@ -332,10 +333,7 @@ function buildSpec(params: {
     theme: params.theme,
     data: { rows: params.rows },
     mappings: recommendation.mappings,
-    motion: {
-      ...defaultMotionForType(params.type),
-      preset: params.motionPreset
-    },
+    motion: defaultMotionForType(params.type),
     export: {
       ...DEFAULT_VISUAL_SPEC.export,
       ...size,
@@ -343,6 +341,81 @@ function buildSpec(params: {
       wechatSafeMode: params.wechatSafe
     }
   };
+}
+
+const thumbRows = {
+  comparison: [
+    { label: "一月", value: 32 },
+    { label: "二月", value: 48 },
+    { label: "三月", value: 26 },
+    { label: "四月", value: 40 },
+    { label: "五月", value: 52 }
+  ],
+  composition: [
+    { channel: "自然流量", value: 42 },
+    { channel: "付费广告", value: 31 },
+    { channel: "公众号", value: 24 },
+    { channel: "小红书", value: 18 }
+  ],
+  trend: [
+    { month: "2026-01", value: 18 },
+    { month: "2026-02", value: 34 },
+    { month: "2026-03", value: 27 },
+    { month: "2026-04", value: 44 },
+    { month: "2026-05", value: 38 },
+    { month: "2026-06", value: 52 }
+  ],
+  scatter: [
+    { x: 12, y: 9, channel: "A" },
+    { x: 24, y: 20, channel: "B" },
+    { x: 36, y: 14, channel: "C" },
+    { x: 48, y: 31, channel: "D" },
+    { x: 30, y: 24, channel: "E" }
+  ],
+  heatmap: Array.from({ length: 84 }, (_, index) => {
+    const date = new Date(Date.UTC(2026, 0, 1 + index));
+    return { date: isoDate(date), value: (index % 13) + (index % 4 === 0 ? 0 : 4) };
+  })
+} satisfies Record<string, DataRow[]>;
+
+function thumbSvg(item: ChartType, theme: ThemeId, palette: string[]): string {
+  let rows: DataRow[] = thumbRows.comparison;
+  let mappings: VisualSpec["mappings"] = { category: "label", value: "value" };
+  let card: CardSpec | undefined;
+  if (item.type === "horizontal-bar" || item.type === "donut" || item.type === "pie" || item.type === "rose" || item.type === "treemap") {
+    rows = thumbRows.composition;
+    mappings = { category: "channel", value: "value" };
+  } else if (item.type === "line" || item.type === "area" || item.type === "stacked-bar") {
+    rows = thumbRows.trend;
+    mappings = { x: "month", y: "value", category: "month", value: "value" };
+  } else if (item.type === "heatmap") {
+    rows = thumbRows.heatmap;
+    mappings = { category: "date", value: "value", x: "date", y: "value" };
+  } else if (item.type === "scatter" || item.type === "bubble") {
+    rows = thumbRows.scatter;
+    mappings = { x: "x", y: "y", value: "y", category: "channel" };
+  } else if (item.type === "metric-card") {
+    rows = thumbRows.trend;
+    mappings = { category: "month", value: "value" };
+    card = { metrics: [{ label: "核心指标", value: "8,420" }] };
+  }
+  return renderAnimatedSvg({
+    ...DEFAULT_VISUAL_SPEC,
+    title: item.name,
+    subtitle: undefined,
+    insight: undefined,
+    caption: undefined,
+    source: undefined,
+    card,
+    type: item.type,
+    story: item.story,
+    theme,
+    palette,
+    data: { rows },
+    mappings,
+    motion: defaultMotionForType(item.type),
+    export: { ...DEFAULT_VISUAL_SPEC.export, width: 480, height: 340 }
+  }).svg;
 }
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -378,7 +451,6 @@ function MatchedExportPreview({ preview, fallbackSvg }: { preview: ExportPreview
       </div>
     );
   }
-
   return (
     <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
       {preview.status === "loading" ? <div className="py-4 text-center text-sm font-medium text-zinc-500">正在同步导出预览...</div> : null}
@@ -397,9 +469,8 @@ export default function EditorPage() {
   const [paletteText, setPaletteText] = useState(palettePresets[0].colors.join(", "));
   const [type, setType] = useState<VisualType>("bar");
   const [story, setStory] = useState<VisualStory>("magnitude");
-  const [theme, setTheme] = useState<ThemeId>("editorial-light");
-  const [motionPreset, setMotionPreset] = useState<MotionPreset>("grow");
-  const [layout, setLayout] = useState<keyof typeof layoutSizes>("小红书竖卡");
+  const [theme, setTheme] = useState<ThemeId>("light");
+  const [layout, setLayout] = useState<LayoutName>("小红书竖卡");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("animated-svg");
   const [wechatSafe, setWechatSafe] = useState(true);
   const [title, setTitle] = useState("销售表现");
@@ -419,11 +490,11 @@ export default function EditorPage() {
   const parsedCard = useMemo(() => {
     if (!cardJson.trim()) return { card: undefined as CardSpec | undefined, warning: "" };
     try {
-      const parsed = CardSpecSchema.safeParse(JSON.parse(cardJson));
-      if (!parsed.success) {
+      const parsedCardSpec = CardSpecSchema.safeParse(JSON.parse(cardJson));
+      if (!parsedCardSpec.success) {
         return { card: undefined, warning: "卡片 JSON 字段不符合 schema，KPI 和周期将不显示。" };
       }
-      return { card: parsed.data, warning: "" };
+      return { card: parsedCardSpec.data, warning: "" };
     } catch {
       return { card: undefined, warning: "卡片 JSON 不是合法 JSON，KPI 和周期将不显示。" };
     }
@@ -445,19 +516,24 @@ export default function EditorPage() {
         type,
         story,
         theme,
-        motionPreset,
         exportFormat,
         layout,
         title,
         subtitle,
         wechatSafe
       }),
-    [exportFormat, layout, motionPreset, palette.colors, parsed.rows, parsedCard.card, story, subtitle, theme, title, type, wechatSafe]
+    [exportFormat, layout, palette.colors, parsed.rows, parsedCard.card, story, subtitle, theme, title, type, wechatSafe]
   );
 
   const rendered = useMemo(() => renderAnimatedSvg(spec), [spec]);
   const visualItemCount = useMemo(() => resolveVisualItemCount(spec), [spec]);
   const resolvedPalette = useMemo(() => resolvePaletteForSpec(spec, THEMES[spec.theme]), [spec]);
+  const thumbnails = useMemo(() => {
+    const colors = palette.colors.length ? palette.colors : palettePresets[0].colors;
+    const map = new Map<VisualType, string>();
+    chartGroups.forEach((group) => group.items.forEach((item) => map.set(item.type, thumbSvg(item, theme, colors))));
+    return map;
+  }, [palette.colors, theme]);
   const apiRequest = JSON.stringify(spec, null, 2);
 
   useEffect(() => {
@@ -471,18 +547,12 @@ export default function EditorPage() {
           body: JSON.stringify({ ...spec, export: { ...spec.export, format: "png", pixelRatio: IMAGE_EXPORT_PIXEL_RATIO } }),
           signal: controller.signal
         });
-
         if (!response.ok) {
           setExportPreview((current) => ({ ...current, status: "error", message: `导出预览同步失败：${response.status}` }));
           return;
         }
-
-        const json = await response.json();
-        setExportPreview({
-          src: json.assets?.imageDataUrl ?? "",
-          status: "ready",
-          message: "导出预览已同步"
-        });
+        const data = await response.json();
+        setExportPreview({ src: data.assets?.imageDataUrl ?? "", status: "ready", message: "导出预览已同步" });
       } catch (error) {
         if (controller.signal.aborted) return;
         setExportPreview((current) => ({
@@ -492,7 +562,6 @@ export default function EditorPage() {
         }));
       }
     }, 420);
-
     return () => {
       controller.abort();
       window.clearTimeout(timer);
@@ -511,22 +580,22 @@ export default function EditorPage() {
     else setCsv(value);
   }
 
-  function applyTemplate(template: (typeof templatePresets)[number]) {
+  function selectChartType(item: ChartType) {
+    setType(item.type);
+    setStory(item.story);
+  }
+
+  function applyTemplate(template: TemplatePreset) {
+    const chart = chartByType.get(template.type);
     setType(template.type);
-    setStory(template.story);
-    setMotionPreset(template.motion);
-    setTheme(template.theme);
+    setStory(chart?.story ?? "magnitude");
     setTitle(template.title);
     setSubtitle(template.subtitle);
-    setLayout("layout" in template && template.layout ? template.layout : "公众号横卡");
-    if ("sampleCsv" in template && template.sampleCsv) {
-      setCsv(template.sampleCsv);
-      setJson("sampleJson" in template && template.sampleJson ? template.sampleJson : json);
-      setMarkdown("sampleMarkdown" in template && template.sampleMarkdown ? template.sampleMarkdown : markdown);
-    }
-    if ("sampleCardJson" in template) {
-      setCardJson(template.sampleCardJson ?? "");
-    }
+    setLayout(template.layout);
+    setCsv(template.csv);
+    setJson(template.json);
+    setMarkdown(template.markdown);
+    setCardJson(template.cardJson);
     setExportFormat("animated-svg");
     setStatus(`已套用模板：${template.name}`);
   }
@@ -535,10 +604,7 @@ export default function EditorPage() {
     setStatus(`正在生成 ${format.toUpperCase()}...`);
     const response = await fetch("/api/v1/render", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: `image/${format}`
-      },
+      headers: { "content-type": "application/json", accept: `image/${format}` },
       body: JSON.stringify({ ...spec, export: { ...spec.export, format, pixelRatio: IMAGE_EXPORT_PIXEL_RATIO } })
     });
     if (!response.ok) {
@@ -561,7 +627,7 @@ export default function EditorPage() {
               <LayoutDashboard className="size-6 shrink-0 text-blue-500" />
               <div className="min-w-0">
                 <div className="truncate font-semibold">VizForge Motion 编辑器</div>
-                <div className="hidden truncate text-xs text-zinc-500 sm:block">数据输入、模板套用、动态 SVG、静态图片和 API 请求。</div>
+                <div className="hidden truncate text-xs text-zinc-500 sm:block">输入数据，选图，导出微信安全的动态 SVG 与高清图片。</div>
               </div>
             </div>
           </div>
@@ -573,9 +639,6 @@ export default function EditorPage() {
             <Link href="/playground" className="hidden rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200 sm:inline-flex">
               API 调试台
             </Link>
-            <Link href="/playground" aria-label="API 调试台" className="grid size-10 place-items-center rounded-full bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200 sm:hidden">
-              <FileJson className="size-4" />
-            </Link>
             <div className="hidden items-center gap-2 rounded-full bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 md:inline-flex">
               <ShieldCheck className="size-4" />
               微信 {rendered.compatibility.score}/100
@@ -584,7 +647,7 @@ export default function EditorPage() {
         </div>
       </header>
 
-      <div className="grid min-w-0 gap-4 p-4 sm:gap-5 sm:p-5 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[390px_minmax(0,1fr)_390px]">
+      <div className="grid min-w-0 gap-4 p-4 sm:gap-5 sm:p-5 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[400px_minmax(0,1fr)_400px]">
         <Panel className="p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -605,11 +668,22 @@ export default function EditorPage() {
           <textarea
             value={currentInputValue()}
             onChange={(event) => updateCurrentInput(event.target.value)}
-            className="min-h-[250px] w-full min-w-0 resize-y overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-sm leading-6 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
+            className="min-h-[230px] w-full min-w-0 resize-y overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-mono text-sm leading-6 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
             spellCheck={false}
           />
 
-          <div className="mt-4 rounded-xl bg-zinc-50 p-4">
+          <div className="mt-4 mb-4">
+            <div className="mb-2 text-sm font-semibold text-zinc-700">快速模板</div>
+            <div className="grid grid-cols-2 gap-2">
+              {templatePresets.map((template) => (
+                <button key={template.name} onClick={() => applyTemplate(template)} className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${type === template.type ? "border-blue-300 bg-blue-50 text-blue-700" : "border-zinc-200 bg-zinc-50 hover:bg-white"}`}>
+                  {template.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-zinc-50 p-4">
             <div className="mb-3 flex items-center gap-2 font-semibold">
               <CheckCircle2 className="size-4 text-emerald-500" />
               字段识别
@@ -629,11 +703,11 @@ export default function EditorPage() {
             )}
           </div>
 
-          <Field label="卡片 JSON" hint="没有字段就不显示" >
+          <Field label="卡片 JSON" hint="没有字段就不显示">
             <textarea
               value={cardJson}
               onChange={(event) => setCardJson(event.target.value)}
-              className="min-h-[140px] w-full min-w-0 resize-y overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-5 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
+              className="min-h-[120px] w-full min-w-0 resize-y overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-5 text-zinc-900 outline-none focus:border-blue-400 focus:bg-white"
               spellCheck={false}
             />
           </Field>
@@ -644,36 +718,53 @@ export default function EditorPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">2. 实时预览</h2>
-                <p className="text-sm text-zinc-500">预览和 PNG/JPEG 下载使用同一条 @2x 图片导出路径。</p>
+                <p className="text-sm text-zinc-500">预览与 PNG/JPEG 下载使用同一条 @2x 导出路径，所见即所得。</p>
               </div>
               <span className="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 lg:hidden">{recommendation.reason}</span>
             </div>
             <MatchedExportPreview preview={exportPreview} fallbackSvg={rendered.svg} />
-          </Panel>
-
-          <Panel className="p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">3. 动态 SVG / 图片导出</h2>
-                <p className="text-sm text-zinc-500">图片预览与下载保持同源；PNG/WebP/JPEG 默认输出 @2x。</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={() => copy(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
-                  <Clipboard className="size-4" />
-                  复制 SVG
-                </button>
-                <button onClick={() => downloadSvg(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
-                  <Download className="size-4" />
-                  下载 SVG
-                </button>
-              </div>
-            </div>
-            <MatchedExportPreview preview={exportPreview} fallbackSvg={rendered.svg} />
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button onClick={() => copy(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
+                <Clipboard className="size-4" />
+                复制公众号 SVG
+              </button>
+              <button onClick={() => downloadSvg(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
+                <Download className="size-4" />
+                下载 SVG
+              </button>
               {(["png", "webp", "jpeg"] as const).map((format) => (
                 <button key={format} onClick={() => void downloadImage(format)} className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
                   下载 {format.toUpperCase()} @2x
                 </button>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel className="p-5">
+            <div className="mb-4">
+              <h2 className="font-semibold">3. 选择图表</h2>
+              <p className="text-sm text-zinc-500">按数据故事分组，点击即套用；缩略图就是导出效果。</p>
+            </div>
+            <div className="space-y-5">
+              {chartGroups.map((group) => (
+                <div key={group.group}>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">{group.group}</div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {group.items.map((item) => (
+                      <button
+                        key={item.type}
+                        onClick={() => selectChartType(item)}
+                        className={`group overflow-hidden rounded-xl border text-left transition ${type === item.type ? "border-blue-400 ring-2 ring-blue-200" : "border-zinc-200 hover:border-zinc-300"}`}
+                      >
+                        <div className="svg-card-preview aspect-[4/3] w-full bg-zinc-50 p-1.5" dangerouslySetInnerHTML={{ __html: thumbnails.get(item.type) ?? "" }} />
+                        <div className="border-t border-zinc-100 px-2.5 py-2">
+                          <div className="text-sm font-semibold text-zinc-800">{item.name}</div>
+                          <div className="truncate text-xs text-zinc-500">{item.desc}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </Panel>
@@ -682,19 +773,10 @@ export default function EditorPage() {
         <Panel className="p-4 lg:col-span-2 2xl:col-span-1">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="font-semibold">4. 模板与 API 配置</h2>
-              <p className="text-sm text-zinc-500">设计围绕功能：模板、色卡和导出都会写入请求 JSON。</p>
+              <h2 className="font-semibold">4. 样式与导出</h2>
+              <p className="text-sm text-zinc-500">主题、版式、色卡和导出都会写入下面的 API 请求 JSON。</p>
             </div>
             <Settings className="size-5 text-zinc-500" />
-          </div>
-
-          <div className="mb-5 grid gap-2">
-            {templatePresets.map((template) => (
-              <button key={template.name} onClick={() => applyTemplate(template)} className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${type === template.type ? "border-blue-300 bg-blue-50 text-blue-700" : "border-zinc-200 bg-zinc-50 hover:bg-white"}`}>
-                <span className="font-semibold">{template.name}</span>
-                <Sparkles className="size-4" />
-              </button>
-            ))}
           </div>
 
           <div className="space-y-4">
@@ -705,81 +787,35 @@ export default function EditorPage() {
               <input value={subtitle} onChange={(event) => setSubtitle(event.target.value)} className={inputClass} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="图表类型">
-                <select
-                  value={type}
-                  onChange={(event) => {
-                    const nextType = event.target.value as VisualType;
-                    setType(nextType);
-                    setMotionPreset(defaultMotionForType(nextType).preset);
-                  }}
-                  className={selectClass}
-                >
-                  {VISUAL_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
-                </select>
-              </Field>
-              <Field label="数据故事">
-                <select value={story} onChange={(event) => setStory(event.target.value as VisualStory)} className={selectClass}>
-                  {VISUAL_STORIES.map((item) => <option key={item} value={item}>{item}</option>)}
-                </select>
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <Field label="主题">
                 <select value={theme} onChange={(event) => setTheme(event.target.value as ThemeId)} className={selectClass}>
                   {THEME_IDS.map((item) => <option key={item} value={item}>{THEMES[item].name}</option>)}
                 </select>
               </Field>
               <Field label="版式">
-                <select value={layout} onChange={(event) => setLayout(event.target.value as keyof typeof layoutSizes)} className={selectClass}>
+                <select value={layout} onChange={(event) => setLayout(event.target.value as LayoutName)} className={selectClass}>
                   {Object.keys(layoutSizes).map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="动画">
-                <select value={motionPreset} onChange={(event) => setMotionPreset(event.target.value as MotionPreset)} className={selectClass}>
-                  {MOTION_PRESETS.map((item) => <option key={item} value={item}>{item}</option>)}
-                </select>
-              </Field>
-              <Field label="API 默认导出">
-                <select value={exportFormat} onChange={(event) => setExportFormat(event.target.value as ExportFormat)} className={selectClass}>
-                  {EXPORT_FORMATS.map((item) => <option key={item} value={item}>{exportLabels[item]}</option>)}
-                </select>
-              </Field>
-            </div>
+            <Field label="API 默认导出格式">
+              <select value={exportFormat} onChange={(event) => setExportFormat(event.target.value as ExportFormat)} className={selectClass}>
+                {EXPORT_FORMATS.map((item) => <option key={item} value={item}>{exportLabels[item]}</option>)}
+              </select>
+            </Field>
 
-            <Field label="API 色卡" hint={`当前图形匹配 ${visualItemCount} 个数据项`}>
+            <Field label="种子色卡" hint={`当前图形匹配 ${visualItemCount} 个数据项`}>
               <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                 <div className="mb-2 flex items-center justify-between gap-3 text-xs text-zinc-500">
-                  <span>输入的是种子色；下面展示渲染器实际使用的完整色卡。</span>
+                  <span>输入种子色，系统会按数据项自动补齐完整色卡。</span>
                   <span className="rounded-full bg-white px-2.5 py-1 font-mono shadow-sm">{resolvedPalette.length} colors</span>
                 </div>
-                <div className="mb-3 grid max-h-60 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                  {resolvedPalette.map((color, index) => (
-                    <div key={`${color}-${index}`} className="group flex items-center gap-2 rounded-lg bg-white p-1.5 transition hover:bg-zinc-100">
-                      <button
-                        onClick={() => copy(color)}
-                        className="size-10 shrink-0 rounded-md border border-zinc-200 shadow-sm"
-                        style={{ backgroundColor: color }}
-                        aria-label={`复制 Chart ${index + 1} 色号 ${color}`}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-zinc-700">Chart {index + 1}</div>
-                        <div className="truncate font-mono text-xs text-zinc-500">{color}</div>
-                      </div>
-                      <button
-                        onClick={() => copy(color)}
-                        className="grid size-7 place-items-center rounded-md text-zinc-400 opacity-0 transition hover:bg-white hover:text-zinc-900 group-hover:opacity-100"
-                        aria-label={`复制 ${color}`}
-                      >
-                        <Clipboard className="size-3.5" />
-                      </button>
-                    </div>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {resolvedPalette.slice(0, 24).map((color, index) => (
+                    <button key={`${color}-${index}`} onClick={() => copy(color)} className="size-7 rounded-md border border-zinc-200 shadow-sm" style={{ backgroundColor: color }} aria-label={`复制 ${color}`} />
                   ))}
                 </div>
                 <input value={paletteText} onChange={(event) => setPaletteText(event.target.value)} className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-xs outline-none focus:border-blue-400" />
-                <div className="mt-2 text-xs text-zinc-500">可以只传 1-3 个主色，系统会按数据项自动补齐；也可以传足完整色卡。</div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {palettePresets.map((preset) => (
                     <button key={preset.name} onClick={() => setPaletteText(preset.colors.join(", "))} className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold transition hover:bg-zinc-100">
@@ -812,7 +848,7 @@ export default function EditorPage() {
           <div className="mt-4 grid gap-2">
             <button onClick={() => copy(apiRequest)} className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
               <RefreshCw className="size-4" />
-              复制 API 请求
+              复制 API 请求 JSON
             </button>
             <button onClick={() => copy(rendered.svg)} className="inline-flex items-center justify-center gap-2 rounded-full bg-zinc-100 px-4 py-3 text-sm font-semibold transition hover:bg-zinc-200">
               <FileJson className="size-4" />

@@ -21,9 +21,9 @@ const DESIGNER_SEQUENCE = [
   "#40c8e0"
 ];
 
-const PART_TO_WHOLE_TYPES: VisualType[] = ["donut", "pie", "arc", "rose", "gauge", "treemap"];
-const BAR_TYPES: VisualType[] = ["bar", "horizontal-bar", "stacked-bar", "grouped-bar", "waterfall", "ranking", "bar-race"];
-const POINT_TYPES: VisualType[] = ["scatter", "bubble", "heatmap", "metric-card", "radar", "network"];
+const PART_TO_WHOLE_TYPES: VisualType[] = ["donut", "pie", "rose", "treemap"];
+const BAR_TYPES: VisualType[] = ["bar", "horizontal-bar"];
+const POINT_TYPES: VisualType[] = ["scatter", "bubble", "heatmap", "metric-card"];
 
 type Rgb = { r: number; g: number; b: number };
 type Hsl = { h: number; s: number; l: number };
@@ -46,19 +46,13 @@ export function resolveVisualItemCount(spec: VisualSpec): number {
     return rows.length;
   }
 
-  if (spec.type === "area") {
-    if (spec.mappings?.series) return uniqueCount(rows, spec.mappings.series);
+  if (spec.type === "area" || spec.type === "stacked-bar") {
+    if (spec.mappings?.series) return Math.max(2, uniqueCount(rows, spec.mappings.series));
     return Math.max(1, numericSeriesCount(spec));
   }
 
-  if (spec.type === "line" || spec.type === "timeline" || spec.type === "slope" || spec.type === "bump" || spec.type === "line-race") {
+  if (spec.type === "line") {
     return spec.mappings?.series ? uniqueCount(rows, spec.mappings.series) : 1;
-  }
-
-  if (spec.type === "sankey") {
-    const source = spec.mappings?.source ?? "source";
-    const target = spec.mappings?.target ?? "target";
-    return new Set(rows.flatMap((row) => [row[source], row[target]].map((value) => String(value ?? "").trim()).filter(Boolean))).size || rows.length;
   }
 
   return rows.length;
