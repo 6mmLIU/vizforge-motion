@@ -151,6 +151,10 @@ function CodeBlock({ title, badge, code }: { title: string; badge: string; code:
   );
 }
 
+function InlineCode({ children }: { children: ReactNode }) {
+  return <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.9em] text-zinc-900">{children}</code>;
+}
+
 function SectionHeader({ id, eyebrow, title, children }: { id: string; eyebrow: string; title: string; children: ReactNode }) {
   return (
     <section id={id} className="scroll-mt-24 border-b border-zinc-200 py-10">
@@ -235,7 +239,9 @@ export default function DocsPage() {
           </section>
 
           <SectionHeader id="quickstart" eyebrow="Quickstart" title="最快跑通一次渲染">
-            <p>请求 `POST /api/v1/render`，`export.format` 设为 `json` 时会返回 SVG、base64、Data URL 和图片尺寸。需要直接下载 PNG 时，把 `accept` 请求头改成 `image/png`。</p>
+            <p>
+              请求 <InlineCode>POST /api/v1/render</InlineCode>，<InlineCode>export.format</InlineCode> 设为 <InlineCode>json</InlineCode> 时会返回 SVG、base64、Data URL 和图片尺寸。需要直接下载 PNG 时，把 <InlineCode>accept</InlineCode> 请求头改成 <InlineCode>image/png</InlineCode>。
+            </p>
           </SectionHeader>
           <div className="grid gap-4 py-6">
             <CodeBlock title="JSON 请求体" badge="application/json" code={requestPayload} />
@@ -243,7 +249,9 @@ export default function DocsPage() {
           </div>
 
           <SectionHeader id="endpoint" eyebrow="Endpoint" title="渲染端点">
-            <p>生产地址是 `https://vizforge-motion.vercel.app/api/v1/render`。同一份请求可以通过 `accept` 决定返回类型：`application/json`、`image/svg+xml`、`image/png`、`image/webp` 或 `image/jpeg`。</p>
+            <p>
+              生产地址是 <InlineCode>https://vizforge-motion.vercel.app/api/v1/render</InlineCode>。同一份请求可以通过 <InlineCode>accept</InlineCode> 决定返回类型：<InlineCode>application/json</InlineCode>、<InlineCode>image/svg+xml</InlineCode>、<InlineCode>image/png</InlineCode>、<InlineCode>image/webp</InlineCode> 或 <InlineCode>image/jpeg</InlineCode>。
+            </p>
           </SectionHeader>
           <div className="grid gap-3 py-6 md:grid-cols-2">
             {[
@@ -296,7 +304,9 @@ export default function DocsPage() {
           </div>
 
           <SectionHeader id="quality" eyebrow="Export Quality" title="高清 PNG/WebP/JPEG">
-            <p>`export.width` 和 `export.height` 是布局尺寸；`export.pixelRatio` 是最终图片倍率。小红书竖卡推荐 `target: "xiaohongshu"` 加 `pixelRatio: 2`，实际输出就是 2160x2880，文字边缘会明显更清楚。</p>
+            <p>
+              <InlineCode>export.width</InlineCode> 和 <InlineCode>export.height</InlineCode> 是布局尺寸；<InlineCode>export.pixelRatio</InlineCode> 是最终图片倍率。小红书竖卡推荐 <InlineCode>{'target: "xiaohongshu"'}</InlineCode> 加 <InlineCode>pixelRatio: 2</InlineCode>，实际输出就是 2160x2880，文字边缘会明显更清楚。
+            </p>
           </SectionHeader>
           <div className="grid gap-4 py-6">
             <CodeBlock title="直接返回高清 PNG" badge="image/png" code={directPngExample} />
@@ -305,7 +315,7 @@ export default function DocsPage() {
                 <CheckCircle2 className="size-4" />
                 判断清晰度看 assets.width / assets.height
               </div>
-              JSON 响应里 `layoutWidth/layoutHeight` 是设计坐标，`width/height` 才是图片文件真实像素。导出 `pixelRatio: 2` 时，这两个数应该分别是布局尺寸的 2 倍。
+              JSON 响应里 <InlineCode>layoutWidth/layoutHeight</InlineCode> 是设计坐标，<InlineCode>width/height</InlineCode> 才是图片文件真实像素。导出 <InlineCode>pixelRatio: 2</InlineCode> 时，这两个数应该分别是布局尺寸的 2 倍。
             </div>
           </div>
 
@@ -317,7 +327,7 @@ export default function DocsPage() {
           </div>
 
           <SectionHeader id="wechat" eyebrow="Safety" title="微信安全模式">
-            <p>默认开启 `wechatSafeMode`。渲染器会拦截 script、foreignObject、事件处理器、外链资源、base64 图片和不安全动画属性，并返回兼容性评分。</p>
+            <p>默认开启 <InlineCode>wechatSafeMode</InlineCode>。渲染器会拦截 script、foreignObject、事件处理器、外链资源、base64 图片和不安全动画属性，并返回兼容性评分。</p>
           </SectionHeader>
           <div className="grid gap-3 py-6 sm:grid-cols-2">
             {[
@@ -377,7 +387,9 @@ export default function DocsPage() {
                 <Braces className="size-4 text-blue-600" />
                 生产建议
               </div>
-              <p className="text-sm leading-6 text-zinc-600">社媒返图优先用 JSON assets 记录元数据；真正发图使用 `imageDataUrl` 或直接 `accept: image/png` 下载。</p>
+              <p className="text-sm leading-6 text-zinc-600">
+                社媒返图优先用 JSON assets 记录元数据；真正发图使用 <InlineCode>imageDataUrl</InlineCode> 或直接 <InlineCode>accept: image/png</InlineCode> 下载。
+              </p>
             </div>
           </div>
         </aside>
