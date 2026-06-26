@@ -16,6 +16,20 @@ export function renderTreemap(spec: VisualSpec, theme: VisualTheme, g: Geom): st
   const tiles = layout(points.map((point, index) => ({ point, index })), g.plot);
   const gap = round(6 * g.s);
 
+  if (total <= 0) {
+    const emptyTile = rect({ x: round(g.plot.x), y: round(g.plot.y), width: round(g.plot.width), height: round(g.plot.height), rx: round(12 * g.s), fill: theme.header, stroke: theme.border, "stroke-width": 1, "stroke-dasharray": "6 6" });
+    const label = textNode("暂无有效数值", {
+      x: round(g.plot.x + g.plot.width / 2),
+      y: round(g.plot.y + g.plot.height / 2),
+      fill: theme.muted,
+      "font-size": Math.round(16 * g.s),
+      "font-family": FONT,
+      "font-weight": 600,
+      "text-anchor": "middle"
+    });
+    return group(emptyTile + label);
+  }
+
   return group(
     tiles
       .map((tile) => {

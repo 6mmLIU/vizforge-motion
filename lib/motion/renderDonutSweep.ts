@@ -19,15 +19,34 @@ export function renderDonut(spec: VisualSpec, theme: VisualTheme, g: Geom): stri
   const cy = chart.y + chart.height / 2;
   const radius = Math.min(chart.width, chart.height) / 2 - round(8 * g.s);
 
-  const chartSvg = isPie
-    ? renderPie(spec, theme, points, total, cx, cy, radius)
-    : renderRing(spec, theme, points, total, cx, cy, radius, g);
+  const hasData = points.length > 0 && total > 0 && points.some((point) => point.value > 0);
+  const chartSvg = !hasData
+    ? renderEmptyRing(spec, theme, points, cx, cy, radius, g)
+    : isPie
+      ? renderPie(spec, theme, points, total, cx, cy, radius)
+      : renderRing(spec, theme, points, total, cx, cy, radius, g);
 
   const legend = vertical
     ? renderLegendGrid(theme, points, total, g, { x: g.plot.x, y: chart.y + chart.height + round(18 * g.s), width: g.plot.width, height: g.plot.y + g.plot.height - (chart.y + chart.height) })
     : renderLegendList(theme, points, total, g, { x: g.plot.x + g.plot.width * 0.52, y: g.plot.y, width: g.plot.width * 0.48, height: g.plot.height });
 
   return group(chartSvg + legend);
+}
+
+function renderEmptyRing(spec: VisualSpec, theme: VisualTheme, points: Point[], cx: number, cy: number, radius: number, g: Geom): string {
+  const isPie = spec.type === "pie";
+  const strokeWidth = Math.max(18, radius * 0.34);
+  const track = circle({ cx, cy, r: round(radius), fill: "none", stroke: theme.track, "stroke-width": round(strokeWidth) });
+  const label = textNode(points.length ? "暂无有效数值" : "暂无数据", {
+    x: cx,
+    y: cy + round(6 * g.s),
+    fill: theme.muted,
+    "font-size": Math.round(clamp(radius * 0.2, 14, 22)),
+    "font-family": FONT,
+    "font-weight": 640,
+    "text-anchor": "middle"
+  });
+  return isPie ? circle({ cx, cy, r: round(radius), fill: theme.track, opacity: 0.7 }) + label : track + label;
 }
 
 function renderRing(spec: VisualSpec, theme: VisualTheme, points: Point[], total: number, cx: number, cy: number, radius: number, g: Geom): string {
@@ -85,8 +104,12 @@ function renderRing(spec: VisualSpec, theme: VisualTheme, points: Point[], total
 }
 
 function renderPie(spec: VisualSpec, theme: VisualTheme, points: Point[], total: number, cx: number, cy: number, radius: number): string {
+  if (total <= 0) {
+    return circle({ cx, cy, r: round(radius), fill: theme.track, opacity: 0.7 });
+  }
   let angle = 0;
   return points
+    .filter((point) => point.value > 0)
     .map((point, index) => {
       const part = Math.max(0, point.value) / total;
       const start = angle;
@@ -117,7 +140,7 @@ function renderLegendList(theme: VisualTheme, points: Point[], total: number, g:
     .map((point, index) => {
       const y = top + index * rowGap;
       const value = Math.max(0, point.value);
-      const percent = `${((value / total) * 100).toFixed(value === total ? 0 : 1)}%`;
+      const percent = total > 0 ? `${((value / total) * 100).toFixed(value === total ? 0 : 1)}%` : "—";
       return group(
         circle({ cx: box.x, cy: round(y - size * 0.34), r: round(6 * g.s), fill: colorFor(theme, index) }) +
           textNode(fitText(point.label, box.width - round(96 * g.s), size), {
@@ -165,7 +188,7 @@ function renderLegendGrid(theme: VisualTheme, points: Point[], total: number, g:
       const x = box.x + col * colWidth;
       const y = box.y + round(8 * g.s) + row * rowGap;
       const value = Math.max(0, point.value);
-      const percent = `${((value / total) * 100).toFixed(value === total ? 0 : 1)}%`;
+      const percent = total > 0 ? `${((value / total) * 100).toFixed(value === total ? 0 : 1)}%` : "—";
       return group(
         circle({ cx: round(x), cy: round(y - size * 0.34), r: round(6 * g.s), fill: colorFor(theme, index) }) +
           textNode(fitText(point.label, colWidth - round(74 * g.s), size), {

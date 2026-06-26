@@ -1,6 +1,6 @@
 import { coerceNumber } from "@/lib/data/inferSchema";
 import { stagger } from "@/lib/motion/timeline";
-import { animate, group, rect } from "@/lib/motion/svgPrimitives";
+import { animate, group, line, rect } from "@/lib/motion/svgPrimitives";
 import { extractPoints, maxAbs, resolveFields, type Point } from "@/lib/motion/renderUtils";
 import {
   clamp,
@@ -39,35 +39,51 @@ export function renderBar(spec: VisualSpec, theme: VisualTheme, g: Geom): string
   const band = barBandLayout(plot.x, plot.width, points.length);
   const baseY = plot.y + plot.height;
   const grid = yAxisGrid(plot, theme, ticks, tickMax, g);
+  const baseline = line({ x1: plot.x, x2: plot.x + plot.width, y1: round(baseY), y2: round(baseY), stroke: theme.axis, "stroke-width": 1.2 });
 
   const bars = points
     .map((point, index) => {
       const value = Math.max(0, point.value);
-      const barHeight = Math.max(2, (value / tickMax) * plot.height);
+      const barHeight = value > 0 && tickMax > 0 ? Math.max(2, (value / tickMax) * plot.height) : 0;
       const x = band.startX + index * band.slot;
       const y = baseY - barHeight;
       const delay = stagger(index, spec.motion.delayMs, Math.max(36, spec.motion.staggerMs));
       const showValue = points.length <= 16 && barHeight > 18;
-      return group(
-        rect(
-          {
+      const isEmpty = barHeight <= 0;
+      const barRect = isEmpty
+        ? rect({
             x: round(x),
-            y: round(y),
+            y: round(baseY - 2),
             width: round(band.barWidth),
-            height: round(barHeight),
-            rx: Math.min(theme.barRadius, round(band.barWidth * 0.42)),
-            fill: fillFor(theme, index)
-          },
-          animate("height", 0, round(barHeight), spec.motion.durationMs, delay, spec.motion) +
-            animate("y", baseY, round(y), spec.motion.durationMs, delay, spec.motion)
-        ) +
+            height: 2,
+            rx: 1,
+            fill: theme.track,
+            opacity: 0.8
+          })
+        : rect(
+            {
+              x: round(x),
+              y: round(y),
+              width: round(band.barWidth),
+              height: round(barHeight),
+              rx: Math.min(theme.barRadius, round(band.barWidth * 0.42)),
+              fill: fillFor(theme, index)
+            },
+            animate("height", 0, round(barHeight), spec.motion.durationMs, delay, spec.motion) +
+              animate("y", baseY, round(y), spec.motion.durationMs, delay, spec.motion)
+          );
+      return group(
+        barRect +
           (showValue ? valueLabel(formatCompact(value), x + band.barWidth / 2, y - 9, theme.strong, g, delay, spec.motion.durationMs) : "") +
+          (isEmpty && points.length <= 16
+            ? valueLabel(formatCompact(value), x + band.barWidth / 2, baseY - 9, theme.soft, g, delay, spec.motion.durationMs)
+            : "") +
           multilineAxisLabel(shortMonth(point.label || String(index + 1)), x + band.barWidth / 2, baseY + round(26 * g.s), band.slot, theme, g)
       );
     })
     .join("");
 
-  return grid + bars;
+  return grid + baseline + bars;
 }
 
 export function renderStackedBar(spec: VisualSpec, theme: VisualTheme, g: Geom): string {

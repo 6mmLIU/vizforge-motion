@@ -18,6 +18,20 @@ type CalendarCell = {
 
 export function renderHeatmap(spec: VisualSpec, theme: VisualTheme, g: Geom): string {
   const points = extractPoints(spec, 400);
+  if (!points.length) {
+    return group(
+      rect({ x: round(g.plot.x), y: round(g.plot.y), width: round(g.plot.width), height: round(g.plot.height), rx: round(12 * g.s), fill: theme.header, stroke: theme.border, "stroke-width": 1, "stroke-dasharray": "6 6" }) +
+        textNode("暂无热力数据", {
+          x: round(g.plot.x + g.plot.width / 2),
+          y: round(g.plot.y + g.plot.height / 2),
+          fill: theme.muted,
+          "font-size": Math.round(15 * g.s),
+          "font-family": FONT,
+          "font-weight": 600,
+          "text-anchor": "middle"
+        })
+    );
+  }
   const fields = resolveFields(spec);
   const cells = calendarCells(points, fields.category);
   if (!cells || points.length < 42) return renderMatrix(spec, theme, g, points);

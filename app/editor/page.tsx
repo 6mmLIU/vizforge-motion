@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Toast, useToast } from "../_hooks/useToast";
 
 const defaultCsv = `month,value,channel
 2026-01,29,自然流量
@@ -452,10 +453,15 @@ function MatchedExportPreview({ preview, fallbackSvg }: { preview: ExportPreview
     );
   }
   return (
-    <div className="svg-card-preview min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-      {preview.status === "loading" ? <div className="py-4 text-center text-sm font-medium text-zinc-500">正在同步导出预览...</div> : null}
+    <div className="svg-card-preview relative min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+      {preview.status === "loading" ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl bg-zinc-50/80 text-sm font-medium text-zinc-500 backdrop-blur-sm">
+          <span className="inline-block size-3 animate-spin rounded-full border-2 border-zinc-300 border-t-blue-500" />
+          正在同步导出预览...
+        </div>
+      ) : null}
       {preview.status === "error" ? <div className="py-4 text-center text-sm font-medium text-amber-700">{preview.message}</div> : null}
-      <div dangerouslySetInnerHTML={{ __html: fallbackSvg }} />
+      <div className={preview.status === "loading" ? "opacity-40 transition-opacity duration-200" : "transition-opacity duration-200"} dangerouslySetInnerHTML={{ __html: fallbackSvg }} />
     </div>
   );
 }
@@ -477,6 +483,41 @@ export default function EditorPage() {
   const [subtitle, setSubtitle] = useState("最近周期销售数据");
   const [status, setStatus] = useState("");
   const [exportPreview, setExportPreview] = useState<ExportPreviewState>({ src: "", status: "idle", message: "" });
+  const { toast, show } = useToast(2000);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const queryType = params.get("type") as VisualType | null;
+    const queryStory = params.get("story") as VisualStory | null;
+    const queryTitle = params.get("title");
+    if (queryType && chartByType.has(queryType)) {
+      const chart = chartByType.get(queryType);
+      setType(queryType);
+      setStory(queryStory ?? chart?.story ?? "magnitude");
+      const matchingTemplate = templatePresets.find((template) => template.type === queryType);
+      if (matchingTemplate) {
+        setTitle(queryTitle ?? matchingTemplate.title);
+        setSubtitle(matchingTemplate.subtitle);
+        setCsv(matchingTemplate.csv);
+        setJson(matchingTemplate.json);
+        setMarkdown(matchingTemplate.markdown);
+        setCardJson(matchingTemplate.cardJson);
+        setLayout(matchingTemplate.layout);
+      } else if (queryTitle) {
+        setTitle(queryTitle);
+      }
+      show(`已套用：${chart?.name ?? queryType}`);
+    } else if (queryTitle) {
+      setTitle(queryTitle);
+    }
+    if (window.history.replaceState) {
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState({}, "", url.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const rawParsed = useMemo(() => {
     if (inputMode === "json") return parseJson(json);
@@ -597,22 +638,46 @@ export default function EditorPage() {
     setMarkdown(template.markdown);
     setCardJson(template.cardJson);
     setExportFormat("animated-svg");
-    setStatus(`已套用模板：${template.name}`);
+    show(`已套用模板：${template.name}`);
   }
 
   async function downloadImage(format: "png" | "webp" | "jpeg") {
     setStatus(`正在生成 ${format.toUpperCase()}...`);
-    const response = await fetch("/api/v1/render", {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: `image/${format}` },
-      body: JSON.stringify({ ...spec, export: { ...spec.export, format, pixelRatio: IMAGE_EXPORT_PIXEL_RATIO } })
-    });
-    if (!response.ok) {
-      setStatus(`导出失败：${response.status}`);
-      return;
+    show(`正在生成 ${format.toUpperCase()}...`);
+    try {
+      const response = await fetch("/api/v1/render", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: `image/${format}` },
+        body: JSON.stringify({ ...spec, export: { ...spec.export, format, pixelRatio: IMAGE_EXPORT_PIXEL_RATIO } })
+      });
+      if (!response.ok) {
+        setStatus(`导出失败：${response.status}`);
+        show(`导出失败：${response.status}`);
+        return;
+      }
+      downloadBlob(await response.blob(), `vizforge-motion@${IMAGE_EXPORT_PIXEL_RATIO}x.${format}`);
+      setStatus(`${format.toUpperCase()} @${IMAGE_EXPORT_PIXEL_RATIO}x 已下载`);
+      show(`${format.toUpperCase()} @${IMAGE_EXPORT_PIXEL_RATIO}x 已下载`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "导出失败";
+      setStatus(`导出失败：${message}`);
+      show(`导出失败：${message}`);
     }
-    downloadBlob(await response.blob(), `vizforge-motion@${IMAGE_EXPORT_PIXEL_RATIO}x.${format}`);
-    setStatus(`${format.toUpperCase()} @${IMAGE_EXPORT_PIXEL_RATIO}x 已下载`);
+  }
+
+  function copySvg() {
+    copy(rendered.svg);
+    show("已复制公众号 SVG");
+  }
+
+  function copyApiRequest() {
+    copy(apiRequest);
+    show("已复制 API 请求 JSON");
+  }
+
+  function copyColor(color: string) {
+    copy(color);
+    show(`已复制颜色 ${color}`);
   }
 
   return (
@@ -724,7 +789,7 @@ export default function EditorPage() {
             </div>
             <MatchedExportPreview preview={exportPreview} fallbackSvg={rendered.svg} />
             <div className="mt-4 flex flex-wrap gap-2">
-              <button onClick={() => copy(rendered.svg)} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
+              <button onClick={copySvg} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold transition hover:bg-zinc-200">
                 <Clipboard className="size-4" />
                 复制公众号 SVG
               </button>
@@ -812,7 +877,7 @@ export default function EditorPage() {
                 </div>
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {resolvedPalette.slice(0, 24).map((color, index) => (
-                    <button key={`${color}-${index}`} onClick={() => copy(color)} className="size-7 rounded-md border border-zinc-200 shadow-sm" style={{ backgroundColor: color }} aria-label={`复制 ${color}`} />
+                    <button key={`${color}-${index}`} onClick={() => copyColor(color)} className="size-7 rounded-md border border-zinc-200 shadow-sm transition hover:scale-110 hover:shadow-md" style={{ backgroundColor: color }} aria-label={`复制 ${color}`} />
                   ))}
                 </div>
                 <input value={paletteText} onChange={(event) => setPaletteText(event.target.value)} className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-xs outline-none focus:border-blue-400" />
@@ -846,11 +911,11 @@ export default function EditorPage() {
           </div>
 
           <div className="mt-4 grid gap-2">
-            <button onClick={() => copy(apiRequest)} className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
+            <button onClick={copyApiRequest} className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
               <RefreshCw className="size-4" />
               复制 API 请求 JSON
             </button>
-            <button onClick={() => copy(rendered.svg)} className="inline-flex items-center justify-center gap-2 rounded-full bg-zinc-100 px-4 py-3 text-sm font-semibold transition hover:bg-zinc-200">
+            <button onClick={copySvg} className="inline-flex items-center justify-center gap-2 rounded-full bg-zinc-100 px-4 py-3 text-sm font-semibold transition hover:bg-zinc-200">
               <FileJson className="size-4" />
               复制公众号 SVG
             </button>
@@ -858,6 +923,8 @@ export default function EditorPage() {
           </div>
         </Panel>
       </div>
+
+      <Toast toast={toast} />
     </main>
   );
 }

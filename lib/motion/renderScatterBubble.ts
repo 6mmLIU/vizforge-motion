@@ -1,5 +1,5 @@
 import { coerceNumber } from "@/lib/data/inferSchema";
-import { animate, animateTransform, circle, group, line, textNode } from "@/lib/motion/svgPrimitives";
+import { animate, animateTransform, circle, group, line, rect, textNode } from "@/lib/motion/svgPrimitives";
 import { resolveFields } from "@/lib/motion/renderUtils";
 import { stagger } from "@/lib/motion/timeline";
 import { FONT, axisLabel, clamp, colorFor, niceTicks, round, yAxisGrid, type Geom, type Rect } from "@/lib/motion/layout";
@@ -25,7 +25,20 @@ export function renderScatter(spec: VisualSpec, theme: VisualTheme, g: Geom): st
       size: coerceNumber(row[fields.value]) ?? 1
     }))
     .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
-  if (!points.length) return "";
+  if (!points.length) {
+    return group(
+      rect({ x: round(g.plot.x), y: round(g.plot.y), width: round(g.plot.width), height: round(g.plot.height), rx: round(12 * g.s), fill: theme.header, stroke: theme.border, "stroke-width": 1, "stroke-dasharray": "6 6" }) +
+        textNode("暂无可绘制的数值点", {
+          x: round(g.plot.x + g.plot.width / 2),
+          y: round(g.plot.y + g.plot.height / 2),
+          fill: theme.muted,
+          "font-size": Math.round(15 * g.s),
+          "font-family": FONT,
+          "font-weight": 600,
+          "text-anchor": "middle"
+        })
+    );
+  }
 
   const leftAxis = round(clamp(40 * g.s, 32, 54));
   const labelBand = round(34 * g.s);

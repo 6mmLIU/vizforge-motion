@@ -1,4 +1,4 @@
-import { animate, circle, group, path } from "@/lib/motion/svgPrimitives";
+import { animate, circle, group, line, path } from "@/lib/motion/svgPrimitives";
 import { maxAbs } from "@/lib/motion/renderUtils";
 import { buildSeries, smoothPath, tickIndexes } from "@/lib/motion/series";
 import {
@@ -21,6 +21,7 @@ export function renderArea(spec: VisualSpec, theme: VisualTheme, g: Geom): strin
   const allValues = bundle.series.flatMap((item) => item.points.map((point) => Math.max(0, point.value)));
   const max = maxAbs(allValues.map((value) => ({ label: "", value, raw: {} })));
   const { ticks, max: tickMax } = niceTicks(max);
+  const isFlat = allValues.length > 0 && allValues.every((value) => value === allValues[0]);
 
   const topReserve = bundle.multi ? round(28 * g.s) : 0;
   const leftAxis = round(clamp(40 * g.s, 32, 54));
@@ -33,6 +34,7 @@ export function renderArea(spec: VisualSpec, theme: VisualTheme, g: Geom): strin
   };
   const baseY = plot.y + plot.height;
   const grid = yAxisGrid(plot, theme, ticks, tickMax, g);
+  const baseline = line({ x1: plot.x, x2: plot.x + plot.width, y1: round(baseY), y2: round(baseY), stroke: theme.axis, "stroke-width": 1.2 });
   const legend = bundle.multi
     ? legendRow(bundle.series.map((item) => ({ label: item.name, color: item.color })), theme, g, g.plot.y + round(16 * g.s))
     : "";
@@ -42,7 +44,7 @@ export function renderArea(spec: VisualSpec, theme: VisualTheme, g: Geom): strin
     .map((item, seriesIndex) => {
       const coordinates = item.points.map((point, index) => ({
         x: plot.x + index * step,
-        y: plot.y + plot.height - (Math.max(0, point.value) / tickMax) * plot.height
+        y: isFlat ? plot.y + plot.height * 0.5 : plot.y + plot.height - (Math.max(0, point.value) / tickMax) * plot.height
       }));
       if (!coordinates.length) return "";
       const lineD = smoothPath(coordinates);
@@ -93,7 +95,7 @@ export function renderArea(spec: VisualSpec, theme: VisualTheme, g: Geom): strin
     })
     .join("");
 
-  return legend + grid + group(seriesSvg) + renderXLabels(labels, plot, theme, g);
+  return legend + grid + baseline + group(seriesSvg) + renderXLabels(labels, plot, theme, g);
 }
 
 function renderXLabels(labels: string[], plot: Rect, theme: VisualTheme, g: Geom): string {

@@ -115,6 +115,11 @@ export function frame(theme: VisualTheme, g: Geom): string {
     "stroke-width": 1
   });
 
+  const softShadow =
+    theme.mode === "dark"
+      ? rect({ x: g.pad, y: g.pad + 3, width: g.w - g.pad * 2, height: g.h - g.pad * 2, rx: g.radius, fill: "rgba(0,0,0,0.18)", opacity: 0.6 })
+      : rect({ x: g.pad, y: g.pad + 2, width: g.w - g.pad * 2, height: g.h - g.pad * 2, rx: g.radius, fill: "rgba(15,23,42,0.05)", opacity: 0.7 });
+
   const headerBand =
     g.headerBottom > g.pad + 40
       ? rect({
@@ -137,7 +142,7 @@ export function frame(theme: VisualTheme, g: Geom): string {
     "stroke-width": 1
   });
 
-  return card + headerBand + divider;
+  return softShadow + card + headerBand + divider;
 }
 
 export function header(spec: VisualSpec, theme: VisualTheme, g: Geom): string {
@@ -182,12 +187,13 @@ function renderPeriodPill(theme: VisualTheme, g: Geom): string {
   const pillWidth = clamp(estTextWidth(label, size) + 38, 92, 200);
   const x = g.w - g.gut - pillWidth;
   const y = g.title.y - Math.round(size * 1.5);
+  const pillFill = theme.mode === "dark" ? mix(theme.accent, theme.surface, 0.78) : mix(theme.accent, theme.surface, 0.88);
   return (
-    rect({ x, y, width: pillWidth, height: Math.round(size * 2.4), rx: Math.round(size * 1.2), fill: theme.track }) +
+    rect({ x, y, width: pillWidth, height: Math.round(size * 2.4), rx: Math.round(size * 1.2), fill: pillFill, stroke: mix(theme.accent, theme.surface, 0.6), "stroke-width": 1 }) +
     textNode(label, {
       x: x + pillWidth / 2,
       y: y + Math.round(size * 1.55),
-      fill: theme.muted,
+      fill: theme.strong,
       "font-size": size,
       "font-family": FONT,
       "font-weight": 560,
@@ -215,6 +221,10 @@ function renderKpiStrip(metrics: CardMetric[], theme: VisualTheme, g: Geom): str
       const valueSize = Math.round((index === 0 ? clamp(height * 0.34, 24, 34) : clamp(height * 0.28, 19, 26)) * 1);
       const trend = metricTrend(metric);
       const padX = Math.round(16 * g.s);
+      const isPrimary = index === 0;
+      const primaryFill = theme.mode === "dark" ? mix(theme.accent, theme.surface, 0.86) : mix(theme.accent, theme.surface, 0.9);
+      const primaryStroke = theme.mode === "dark" ? mix(theme.accent, theme.surface, 0.6) : mix(theme.accent, theme.surface, 0.7);
+      const accentBar = isPrimary ? rect({ x: round(x + padX - 8), y: top + Math.round(height * 0.18), width: 3, height: Math.round(height * 0.5), rx: 2, fill: theme.accent }) : "";
       return (
         rect({
           x: round(x),
@@ -222,10 +232,11 @@ function renderKpiStrip(metrics: CardMetric[], theme: VisualTheme, g: Geom): str
           width: round(itemWidth),
           height,
           rx: Math.round(16 * g.s),
-          fill: index === 0 ? mix(theme.accent, theme.surface, 0.9) : theme.header,
-          stroke: index === 0 ? mix(theme.accent, theme.surface, 0.7) : theme.border,
+          fill: isPrimary ? primaryFill : theme.header,
+          stroke: isPrimary ? primaryStroke : theme.border,
           "stroke-width": 1
         }) +
+        accentBar +
         textNode(metric.label, {
           x: round(x + padX),
           y: top + Math.round(height * 0.32),
@@ -240,7 +251,7 @@ function renderKpiStrip(metrics: CardMetric[], theme: VisualTheme, g: Geom): str
           fill: theme.strong,
           "font-size": valueSize,
           "font-family": FONT,
-          "font-weight": index === 0 ? 740 : 660
+          "font-weight": isPrimary ? 740 : 660
         }) +
         (trend
           ? textNode(trend.text, {
@@ -300,10 +311,19 @@ export function niceTicks(max: number, count = 4): { ticks: number[]; max: numbe
 
 export function yAxisGrid(plot: Rect, theme: VisualTheme, ticks: number[], tickMax: number, g: Geom): string {
   return ticks
-    .map((tick) => {
+    .map((tick, index) => {
       const y = round(plot.y + plot.height - (tick / tickMax) * plot.height);
+      const isBaseline = index === 0;
       return (
-        line({ x1: plot.x, x2: plot.x + plot.width, y1: y, y2: y, stroke: theme.grid, "stroke-width": 1 }) +
+        line({
+          x1: plot.x,
+          x2: plot.x + plot.width,
+          y1: y,
+          y2: y,
+          stroke: isBaseline ? theme.axis : theme.grid,
+          "stroke-width": isBaseline ? 1.2 : 1,
+          "stroke-dasharray": isBaseline ? undefined : "3 5"
+        }) +
         textNode(formatCompact(tick), {
           x: plot.x - Math.round(12 * g.s),
           y: y + 4,

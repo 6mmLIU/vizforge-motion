@@ -112,3 +112,44 @@ pre {
   margin: 0 auto;
   border-radius: 16px;
 }
+
+.svg-card-preview svg,
+.export-card-preview img {
+  filter: drop-shadow(0 4px 14px rgba(15, 23, 42, 0.08));
+}
+
+.svg-card-preview:hover svg {
+  filter: drop-shadow(0 10px 28px rgba(15, 23, 42, 0.14));
+}
+
+@keyframes vizforge-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vizforge-fade-in {
+  animation: vizforge-fade-in 0.28s ease-out;
+}
+
+.vizforge-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 0.6rem 1.1rem;
+  border-radius: 9999px;
+  background: #0f1830;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+  animation: vizforge-fade-in 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vizforge-fade-in,
+  .vizforge-toast {
+    animation: none;
+  }
+}

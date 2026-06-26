@@ -1,4 +1,5 @@
 import { baseDefs } from "@/lib/motion/svgGradients";
+import { describeEmptyState, renderEmptyState } from "@/lib/motion/emptyState";
 import { footer, frame, geom, header, type Geom } from "@/lib/motion/layout";
 import { renderBar, renderStackedBar } from "@/lib/motion/renderAnimatedBar";
 import { renderHorizontalBar } from "@/lib/motion/renderAnimatedHorizontalBar";
@@ -107,12 +108,29 @@ export function renderAnimatedSvg(input: VisualSpec): AnimatedSvgRenderResult {
   const theme = themeForSpec(renderSpec);
   const g = geom(renderSpec);
   const warnings = limitWarnings(spec);
+  const emptyState = describeEmptyState(renderSpec);
+
+  let body: string;
+  if (emptyState) {
+    body = renderEmptyState(theme, g, emptyState);
+    warnings.push(emptyState.message);
+  } else {
+    try {
+      body = bodyForSpec(renderSpec, theme, g);
+    } catch (error) {
+      body = renderEmptyState(theme, g, {
+        message: "渲染时遇到异常",
+        hint: error instanceof Error ? error.message.slice(0, 60) : "请检查数据字段映射是否正确。"
+      });
+      warnings.push("图表渲染失败，已回退到空状态。请检查字段映射或数据格式。");
+    }
+  }
 
   const children =
     baseDefs(theme) +
     frame(theme, g) +
     header(renderSpec, theme, g) +
-    bodyForSpec(renderSpec, theme, g) +
+    body +
     footer(renderSpec, theme, g);
 
   const svg = svgRoot({

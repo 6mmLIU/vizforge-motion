@@ -7,6 +7,7 @@ import { ArrowUpRight, ChartNoAxesCombined, Code2, FileJson, Github, Palette, Sh
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Toast, useToast } from "./_hooks/useToast";
 
 const nav = [
   { label: "图库", href: "#gallery" },
@@ -182,7 +183,18 @@ function Chip({ children }: { children: React.ReactNode }) {
 export default function HomePage() {
   const [palette, setPalette] = useState(palettePresets[0].colors);
   const [theme, setTheme] = useState<ThemeId>("light");
+  const { toast, show } = useToast();
   const cards = useMemo(() => gallery.map((item) => ({ ...item, svg: svgFor(item, theme, palette) })), [palette, theme]);
+
+  function handlePalette(preset: (typeof palettePresets)[number]) {
+    setPalette(preset.colors);
+    show(`已切换色卡：${preset.name}`);
+  }
+
+  function handleTheme(option: ThemeId) {
+    setTheme(option);
+    show(`已切换主题：${THEMES[option].name}`);
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f7f7f8] text-zinc-950">
@@ -229,14 +241,25 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5 rounded-full bg-white p-1 shadow-sm ring-1 ring-zinc-200">
               {themeOptions.map((option) => (
-                <button key={option} onClick={() => setTheme(option)} className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${theme === option ? "bg-zinc-950 text-white" : "text-zinc-600 hover:text-zinc-950"}`}>
+                <button
+                  key={option}
+                  onClick={() => handleTheme(option)}
+                  aria-pressed={theme === option}
+                  className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${theme === option ? "bg-zinc-950 text-white" : "text-zinc-600 hover:text-zinc-950"}`}
+                >
                   {THEMES[option].name}
                 </button>
               ))}
             </div>
             <div className="flex items-center gap-2">
               {palettePresets.map((preset) => (
-                <button key={preset.name} onClick={() => setPalette(preset.colors)} aria-label={preset.name} className={`flex items-center gap-1 rounded-full border p-1.5 transition ${palette[0] === preset.colors[0] ? "border-zinc-950 bg-white" : "border-transparent hover:bg-white"}`}>
+                <button
+                  key={preset.name}
+                  onClick={() => handlePalette(preset)}
+                  aria-label={preset.name}
+                  aria-pressed={palette[0] === preset.colors[0]}
+                  className={`flex items-center gap-1 rounded-full border p-1.5 transition ${palette[0] === preset.colors[0] ? "border-zinc-950 bg-white" : "border-transparent hover:bg-white"}`}
+                >
                   {preset.colors.slice(0, 4).map((color) => <span key={color} className="size-5 rounded-full" style={{ backgroundColor: color }} />)}
                 </button>
               ))}
@@ -245,18 +268,34 @@ export default function HomePage() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {cards.map((item) => (
-            <article key={item.title} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(0,0,0,0.08)]">
-              <div className="svg-card-preview bg-zinc-50 p-3" dangerouslySetInnerHTML={{ __html: item.svg }} />
-              <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-4 py-3">
-                <div>
-                  <div className="font-semibold">{item.title}</div>
-                  <div className="text-sm text-zinc-500">{item.caption}</div>
+          {cards.map((item) => {
+            const editorHref = `/editor?type=${item.type}&story=${item.visualStory}&title=${encodeURIComponent(item.title)}`;
+            return (
+              <article
+                key={item.title}
+                className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.10)]"
+              >
+                <Link href={editorHref} className="block" aria-label={`用「${item.title}」模板打开编辑器`}>
+                  <div className="svg-card-preview bg-zinc-50 p-3 transition duration-300 group-hover:scale-[1.015]" dangerouslySetInnerHTML={{ __html: item.svg }} />
+                </Link>
+                <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold">{item.title}</div>
+                    <div className="truncate text-sm text-zinc-500">{item.caption}</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600">{item.story}</span>
+                    <Link
+                      href={editorHref}
+                      className="hidden rounded-full bg-blue-600/10 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-600 hover:text-white md:inline-flex"
+                    >
+                      套用
+                    </Link>
+                  </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600">{item.story}</span>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -303,6 +342,8 @@ export default function HomePage() {
           <div>把数据锻造成可发布的视觉素材。</div>
         </div>
       </footer>
+
+      <Toast toast={toast} />
     </main>
   );
 }

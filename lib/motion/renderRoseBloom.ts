@@ -31,27 +31,47 @@ export function renderRose(spec: VisualSpec, theme: VisualTheme, g: Geom): strin
   const angle = 360 / Math.max(points.length, 1);
   const gap = clamp(angle * 0.04, 0.4, 1.4);
 
-  const petals = points
-    .map((point, index) => {
-      const start = index * angle + gap;
-      const end = (index + 1) * angle - gap;
-      const outer = inner + Math.sqrt(Math.max(0, point.value) / max) * (maxRadius - inner);
-      const collapsed = sectorPath(cx, cy, inner, inner + 1, start, end);
-      const expanded = sectorPath(cx, cy, inner, outer, start, end);
-      return path(
-        {
-          d: expanded,
-          fill: colorFor(theme, index),
-          opacity: 0.92,
-          stroke: theme.surface,
-          "stroke-width": 1,
-          "stroke-linejoin": "round"
-        },
-        animate("d", collapsed, expanded, spec.motion.durationMs, spec.motion.delayMs, spec.motion) +
-          animate("opacity", 0, 0.92, 480, spec.motion.delayMs, { easing: "ease-out" })
-      );
-    })
-    .join("");
+  const petals =
+    max <= 0
+      ? points
+          .map((point, index) => {
+            const start = index * angle + gap;
+            const end = (index + 1) * angle - gap;
+            const collapsed = sectorPath(cx, cy, inner, inner + 1, start, end);
+            return path(
+              {
+                d: collapsed,
+                fill: colorFor(theme, index),
+                opacity: 0.4,
+                stroke: theme.surface,
+                "stroke-width": 1,
+                "stroke-linejoin": "round"
+              },
+              animate("opacity", 0, 0.4, 480, spec.motion.delayMs, { easing: "ease-out" })
+            );
+          })
+          .join("")
+      : points
+          .map((point, index) => {
+            const start = index * angle + gap;
+            const end = (index + 1) * angle - gap;
+            const outer = inner + Math.sqrt(Math.max(0, point.value) / max) * (maxRadius - inner);
+            const collapsed = sectorPath(cx, cy, inner, inner + 1, start, end);
+            const expanded = sectorPath(cx, cy, inner, outer, start, end);
+            return path(
+              {
+                d: expanded,
+                fill: colorFor(theme, index),
+                opacity: 0.92,
+                stroke: theme.surface,
+                "stroke-width": 1,
+                "stroke-linejoin": "round"
+              },
+              animate("d", collapsed, expanded, spec.motion.durationMs, spec.motion.delayMs, spec.motion) +
+                animate("opacity", 0, 0.92, 480, spec.motion.delayMs, { easing: "ease-out" })
+            );
+          })
+          .join("");
 
   const labelStep = points.length <= 10 ? 1 : points.length <= 18 ? 2 : Math.ceil(points.length / 9);
   const size = Math.round(12.5 * g.s);
